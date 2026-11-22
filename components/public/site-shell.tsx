@@ -20,12 +20,12 @@ export function PublicHeader() {
         <nav className="wp-desktop-nav" aria-label="Main navigation">
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Home</Link><Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Browse services</Link><Link href="/#categories">Categories</Link>
         </nav>
-        <Link href="/auth-smoke" className="wp-button wp-button-outline wp-desktop-signin">Sign in</Link>
+        <Link href="/sign-in" className="wp-button wp-button-outline wp-desktop-signin">Sign in</Link>
         <details className="wp-mobile-nav" ref={menu}>
           <summary aria-label="Navigation menu"><Menu size={23} aria-hidden="true" /></summary>
           <nav aria-label="Mobile navigation">
             <Link href="/" onClick={closeMenu}>Home</Link><Link href="/services" onClick={closeMenu}>Browse services</Link>
-            <Link href="/#categories" onClick={closeMenu}>Categories</Link><Link href="/auth-smoke" onClick={closeMenu}>Sign in</Link>
+            <Link href="/#categories" onClick={closeMenu}>Categories</Link><Link href="/sign-in" onClick={closeMenu}>Sign in</Link>
           </nav>
         </details>
       </div>
@@ -38,7 +38,7 @@ export function PublicFooter() {
     <footer className="wp-footer">
       <div className="wp-wrap wp-footer-main">
         <div><Wordmark /><p>A place to find the people and places behind your wedding.</p></div>
-        <nav aria-label="Footer navigation"><Link href="/services">Browse services</Link><Link href="/#categories">Categories</Link><Link href="/auth-smoke">Sign in</Link></nav>
+        <nav aria-label="Footer navigation"><Link href="/services">Browse services</Link><Link href="/#categories">Categories</Link><Link href="/sign-in">Sign in</Link></nav>
       </div>
       <div className="wp-wrap wp-footer-bottom">© WedPlan</div>
     </footer>
