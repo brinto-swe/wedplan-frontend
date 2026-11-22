@@ -1,3 +1,5 @@
+import { LoadingLabel } from "@/components/ui/loading-label"
+import { UiIcon } from "@/components/ui/icon"
 import Image from "next/image"
 import Link from "next/link"
 import { Camera, CookingPot, Flower2, MapPin, Music, Car, Video, Shirt, Search, CalendarDays, Check } from "lucide-react"
@@ -43,7 +45,7 @@ export default function HomePage() {
         <div className="wp-section-heading"><div><p className="wp-kicker">THE WEDDING DIRECTORY</p><h2>Wedding Service Categories</h2></div><Link className="wp-text-link" href="/services">View all services</Link></div>
         <div className="wp-category-grid">
           {homeCategories.map(([name, Icon]) => <Link key={name} className="wp-category wp-category-icon" href={browseUrl({ page: 1, category: name })}>
-            <Icon size={29} strokeWidth={1.65} aria-hidden="true" /><h3>{name}</h3>
+            <UiIcon icon={Icon} size="xl" /><h3>{name}</h3>
           </Link>)}
         </div>
       </section>
@@ -51,11 +53,11 @@ export default function HomePage() {
       <section className="wp-featured">
         <div className="wp-wrap wp-section">
           <div className="wp-section-heading"><div><h2>Popular Wedding Services</h2><p>Find the right fit for the day you have in mind.</p></div><Link className="wp-text-link" href="/services">Browse the directory</Link></div>
-          <Suspense fallback={<p className="wp-notice" role="status">Loading services…</p>}><FeaturedServices /></Suspense>
+          <Suspense fallback={<LoadingLabel>Loading services…</LoadingLabel>}><FeaturedServices /></Suspense>
         </div>
       </section>
 
-      <section className="wp-home-steps"><div className="wp-wrap"><h2>Plan Your Wedding in Three Steps</h2><div>{[[Search, "Discover services", "Browse venues, photographers, and more."], [CalendarDays, "Request a booking", "Booking requests will be available when booking launches."], [Check, "Get confirmed", "Vendors will confirm availability through the booking workflow."]].map(([Icon, title, copy]) => { const StepIcon = Icon as typeof Search; return <article key={String(title)}><StepIcon size={28} aria-hidden="true" /><h3>{String(title)}</h3><p>{String(copy)}</p></article> })}</div></div></section>
+      <section className="wp-home-steps"><div className="wp-wrap"><h2>Plan Your Wedding in Three Steps</h2><div>{[[Search, "Discover services", "Browse venues, photographers, and more."], [CalendarDays, "Request a booking", "Booking requests will be available when booking launches."], [Check, "Get confirmed", "Vendors will confirm availability through the booking workflow."]].map(([Icon, title, copy]) => { const StepIcon = Icon as typeof Search; return <article key={String(title)}><UiIcon icon={StepIcon} size="xl" /><h3>{String(title)}</h3><p>{String(copy)}</p></article> })}</div></div></section>
       <section className="wp-wrap wp-section">
         <div className="wp-cta">
           <h2>Start with what matters most.</h2>

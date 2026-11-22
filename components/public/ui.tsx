@@ -1,3 +1,4 @@
+import { UiIcon } from "@/components/ui/icon"
 import Image from "next/image"
 import Link from "next/link"
 import { MapPin, Search } from "lucide-react"
@@ -16,7 +17,7 @@ export function SearchForm({ filters, hero = false }: { filters?: Filters; hero?
       <label><span>What are you looking for?</span><input name="q" defaultValue={filters?.q} placeholder="e.g. garden venue" maxLength={120} /></label>
       <label><span>Location</span><input name="location" defaultValue={filters?.location} placeholder="City or region" maxLength={120} /></label>
       <label><span>Category</span><input name="category" defaultValue={filters?.category} placeholder="Any category" maxLength={80} /></label>
-      <button type="submit" className="wp-button"><Search size={17} aria-hidden="true" /> Search</button>
+      <button type="submit" className="wp-button"><UiIcon icon={Search} size="sm" /> Search</button>
     </form>
   )
 }
@@ -30,7 +31,7 @@ export function ServiceCard({ service }: { service: Service }) {
         <div className="wp-card-content">
           <p className="wp-kicker">{service.category}</p>
           <h3>{service.title}</h3>
-          <p className="wp-location"><MapPin size={15} aria-hidden="true" />{service.location}</p>
+          <p className="wp-location"><UiIcon icon={MapPin} size="sm" />{service.location}</p>
           <p className="wp-price">From <strong>{formattedPrice(service)}</strong></p>
         </div>
       </Link>

@@ -1,7 +1,8 @@
+import { UiIcon } from "@/components/ui/icon"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { MapPin } from "lucide-react"
+import { ChevronRight, MapPin } from "lucide-react"
 
 import { Gallery } from "@/components/public/gallery"
 import { RetryButton } from "@/components/public/retry-button"
@@ -24,13 +25,13 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
   const { service } = result
   return (
     <div className="wp-wrap wp-section">
-      <nav className="wp-breadcrumb" aria-label="Breadcrumb"><Link href="/services">Browse services</Link><span aria-hidden="true">/</span><span>{service.category}</span></nav>
+      <nav className="wp-breadcrumb" aria-label="Breadcrumb"><Link href="/services">Browse services</Link><UiIcon icon={ChevronRight} size="sm" /><span>{service.category}</span></nav>
       {service.demo && <DemoNotice />}
       <div className="wp-detail-grid wp-detail-reference">
       <Gallery key={id} images={serviceImages(service.category)} />
       <div className="wp-page-heading wp-detail-heading">
         <p className="wp-kicker">{service.category}</p><h1>{service.title}</h1>
-        <p className="wp-location"><MapPin size={18} aria-hidden="true" />{service.location}</p>
+        <p className="wp-location"><UiIcon icon={MapPin} size="md" />{service.location}</p>
       </div>
         <div className="wp-detail-about">
           <section className="wp-detail-copy"><h2>About this service</h2><p>{service.description}</p></section>

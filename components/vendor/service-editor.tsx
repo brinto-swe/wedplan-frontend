@@ -1,5 +1,6 @@
 "use client"
 
+import { UiIcon } from "@/components/ui/icon"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -63,12 +64,12 @@ function EditorForm({ service }: { service?: VendorService }) {
         <label>Price<input name="price" defaultValue={service?.price} type="number" inputMode="decimal" min={0} max={1_000_000_000} step="any" required {...invalid("price")} />{fieldError("price")}</label>
         <label className="vendor-field-wide">Description<textarea name="description" defaultValue={service?.description} rows={6} maxLength={5000} placeholder="Describe what’s included, the service duration, and any requirements." required {...invalid("description")} />{fieldError("description")}</label>
       </div>
-      <div className="vendor-media"><ImageIcon size={23} aria-hidden="true" /><div><h3>Service images</h3><p>Image uploads are unavailable for service listings. You can save your listing and add photos when uploads are supported.</p></div></div>
+      <div className="vendor-media"><UiIcon icon={ImageIcon} size="lg" /><div><h3>Service images</h3><p>Image uploads are unavailable for service listings. You can save your listing and add photos when uploads are supported.</p></div></div>
     </fieldset>
     <aside className="vendor-editor-aside"><fieldset disabled={mutation.isPending || saved} className="vendor-card vendor-status"><legend>Service Status</legend>
       <label><input type="radio" name="status" value="active" defaultChecked={service?.isActive === true} />Publish as active</label><p>Visible in the public directory. Active service limits apply.</p>
       <label><input type="radio" name="status" value="inactive" defaultChecked={!service?.isActive} />Save as draft</label><p>Keep this service private until you’re ready to publish.</p>
-    </fieldset><section className="vendor-card vendor-guidelines"><h2>Publishing Guidelines</h2><ul>{["Use a clear service title.", "Choose an accurate category.", "Check the price and location.", "Describe what’s included."].map((tip) => <li key={tip}><Check size={16} aria-hidden="true" />{tip}</li>)}</ul></section></aside></div>
+    </fieldset><section className="vendor-card vendor-guidelines"><h2>Publishing Guidelines</h2><ul>{["Use a clear service title.", "Choose an accurate category.", "Check the price and location.", "Describe what’s included."].map((tip) => <li key={tip}><UiIcon icon={Check} size="sm" />{tip}</li>)}</ul></section></aside></div>
     {Object.keys(issues).length > 0 && <p className="vendor-field-error" role="alert">Check the highlighted fields before saving.</p>}
     {error && <div role="alert" className="vendor-notice vendor-error">
       <p>{error instanceof VendorApiError ? error.message : "The request could not be confirmed. Check My Services before trying again."}</p>

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 
+import { ThemeSelect } from "@/components/ui/theme-select"
 import { Button } from "@/components/ui/button"
 import {
   authClient,
@@ -48,7 +49,7 @@ export default function AuthSmokePage() {
 
   return (
     <main className="mx-auto max-w-md space-y-5 p-6">
-      <h1 className="text-xl font-semibold">Authentication smoke test</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-xl font-semibold">Authentication smoke test</h1><ThemeSelect /></div>
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
           Mode

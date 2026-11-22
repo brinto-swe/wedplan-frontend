@@ -1,3 +1,4 @@
+import { UiIcon } from "@/components/ui/icon"
 import type { ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 
@@ -10,8 +11,8 @@ export function VendorBanner({ title, description, children }: { title: ReactNod
 export function VendorStats({ items }: { items: { label: string; value: string | number; icon: LucideIcon }[] }) {
   return <section aria-label="Workspace statistics" className="vendor-stats">
     {items.map(({ label, value, icon: Icon }) => <div className="vendor-card vendor-stat" key={label}>
-      <span className="vendor-stat-icon"><Icon size={24} aria-hidden="true" /></span>
-      <div><strong>{value}</strong><p>{label}</p></div>
+      <span className="vendor-stat-icon"><UiIcon icon={Icon} size="lg" /></span>
+      <div><strong className={value === "Unavailable" ? "vendor-stat-status" : undefined}>{value}</strong><p>{label}</p></div>
     </div>)}
   </section>
 }

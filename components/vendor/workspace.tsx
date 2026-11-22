@@ -1,10 +1,13 @@
 "use client"
 
+import { UiIcon } from "@/components/ui/icon"
+import { LoadingLabel } from "@/components/ui/loading-label"
+import { ThemeSelect } from "@/components/ui/theme-select"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
 import { createContext, useContext, useState, type ReactNode } from "react"
-import { CalendarDays, ChevronDown, Crown, HeartHandshake, LayoutDashboard, Layers3, Plus, User } from "lucide-react"
+import { CalendarDays, ChevronDown, ChevronRight, Crown, HeartHandshake, LayoutDashboard, Layers3, Plus, User } from "lucide-react"
 
 import { ActionLink } from "@/components/public/ui"
 import { authClient } from "@/lib/auth"
@@ -34,8 +37,8 @@ export function WorkspaceState({ title, text, children }: { title: string; text:
 }
 
 export function LoadingState({ text = "Loading your workspace…" }: { text?: string }) {
-  return <div role="status" className="vendor-loading">
-    <p>{text}</p><div aria-hidden="true" />
+  return <div className="vendor-loading">
+    <LoadingLabel>{text}</LoadingLabel><div aria-hidden="true" />
   </div>
 }
 
@@ -82,25 +85,26 @@ function VendorGate({ children }: { children: ReactNode }) {
     <div className="vendor-layout">
       <a className="wp-skip" href="#vendor-main">Skip to content</a>
       <aside className="vendor-sidebar">
-        <Link className="wp-brand" href="/"><HeartHandshake size={29} aria-hidden="true" /> WedPlan<span>.</span></Link>
+        <Link className="wp-brand" href="/"><UiIcon icon={HeartHandshake} size="xl" /> WedPlan<span>.</span></Link>
         <div className="vendor-identity"><span className="vendor-avatar" aria-hidden="true">{profile.data.name.trim().charAt(0).toUpperCase()}</span><div><strong>{profile.data.name}</strong><p>Vendor account</p></div></div>
         <nav aria-label="Vendor navigation">
           {navigation.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href === "/vendor/services" && pathname.endsWith("/edit"))
-            return <Link key={href} href={href} aria-current={active ? "page" : undefined}><Icon size={17} aria-hidden="true" />{label}</Link>
+            return <Link key={href} href={href} aria-current={active ? "page" : undefined}><UiIcon icon={Icon} size="sm" />{label}</Link>
           })}
-          {[[CalendarDays,"Booking Requests"],[Crown,"Subscription"],[User,"Profile Settings"]].map(([Icon, label]) => { const ItemIcon = Icon as typeof CalendarDays; return <span className="vendor-nav-disabled" key={String(label)} aria-disabled="true"><ItemIcon size={17} aria-hidden="true" />{String(label)}</span> })}
+          {[[CalendarDays,"Booking Requests"],[Crown,"Subscription"],[User,"Profile Settings"]].map(([Icon, label]) => { const ItemIcon = Icon as typeof CalendarDays; return <span className="vendor-nav-disabled" key={String(label)} aria-disabled="true"><UiIcon icon={ItemIcon} size="sm" />{String(label)}</span> })}
         </nav>
-        <div className="vendor-sidebar-plan"><Crown size={28} aria-hidden="true" /><strong>{plan === "Premium" ? "Premium Plan" : plan === "Free" ? "Free Plan" : "Subscription"}</strong><p>{plan === "Premium" ? "Unlimited active service listings." : plan === "Free" ? "Publish up to three active services." : "Plan information unavailable."}</p></div>
+        <div className="vendor-sidebar-plan"><UiIcon icon={Crown} size="xl" /><strong>{plan === "Premium" ? "Premium Plan" : plan === "Free" ? "Free Plan" : "Subscription"}</strong><p>{plan === "Premium" ? "Unlimited active service listings." : plan === "Free" ? "Publish up to three active services." : "Plan information unavailable."}</p></div>
         <Link href="/services" className="vendor-public-link">Public directory</Link>
       </aside>
       <div className="vendor-content">
         <header className="vendor-topbar">
-          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><span aria-hidden="true">›</span><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : "My Services"}</strong></>}</div>
+          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : "My Services"}</strong></>}</div>
           <span>{profile.data.name}</span>
           <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
+          <ThemeSelect />
           <details className="vendor-mobile-links">
-            <summary>Workspace <ChevronDown size={15} aria-hidden="true" /></summary>
+            <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>
             <nav aria-label="Mobile vendor navigation">
               {navigation.map(({ href, label }) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined}>{label}</Link>)}
               <Link href="/services">Public directory</Link>

@@ -1,5 +1,6 @@
 "use client"
 
+import { UiIcon } from "@/components/ui/icon"
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
@@ -81,7 +82,7 @@ export function MyServices() {
     {query.isPending ? <LoadingState text="Loading your services…" /> : query.isError ? <RequestError error={query.error} retry={() => void query.refetch()} /> : (
       <section className="vendor-card vendor-table-card" aria-label="Your service listings">
         <div className="vendor-toolbar">
-          <label className="vendor-search"><span>Search services</span><span><Search size={16} aria-hidden="true" /><input type="search" value={search} placeholder="Title, category, or location" onChange={(event) => { setSearch(event.target.value); setPage(1) }} /></span></label>
+          <label className="vendor-search"><span>Search services</span><span><UiIcon icon={Search} size="sm" /><input type="search" value={search} placeholder="Title, category, or location" onChange={(event) => { setSearch(event.target.value); setPage(1) }} /></span></label>
           <label>Category<select value={category} onChange={(event) => {setCategory(event.target.value); setPage(1)}}><option value="">All categories</option>{[...new Set(items.map((item) => item.category))].sort().map((value) => <option key={value}>{value}</option>)}</select></label>
           <label>Status<select value={status} onChange={(event) => { const value = event.target.value; setStatus(value === "active" || value === "inactive" ? value : "all"); setPage(1) }}>
             <option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option>
@@ -95,9 +96,9 @@ export function MyServices() {
               <td><span className="vendor-badge">{item.category}</span></td><td>{formatPrice.format(item.price)}</td>
               <td><span className={`vendor-badge ${item.isActive ? "vendor-active" : ""}`}>{item.isActive ? "Active" : "Inactive"}</span></td>
               <td><time dateTime={item.createdAt}>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.createdAt))}</time></td><td><div className="vendor-row-actions">
-                {item.isActive && <Link aria-label={`View ${item.title}`} href={`/services/${item.id}`}><Eye size={17} /></Link>}
-                <Link aria-label={`Edit ${item.title}`} href={`/vendor/services/${item.id}/edit`}><Pencil size={17} /></Link>
-                <button type="button" aria-label={`Delete ${item.title}`} disabled={removal.isPending} onClick={() => { removal.reset(); setNotice(""); setSelected(item) }}><Trash2 size={17} /></button>
+                {item.isActive && <Link aria-label={`View ${item.title}`} href={`/services/${item.id}`}><UiIcon icon={Eye} size="sm" /></Link>}
+                <Link aria-label={`Edit ${item.title}`} href={`/vendor/services/${item.id}/edit`}><UiIcon icon={Pencil} size="sm" /></Link>
+                <button type="button" aria-label={`Delete ${item.title}`} disabled={removal.isPending} onClick={() => { removal.reset(); setNotice(""); setSelected(item) }}><UiIcon icon={Trash2} size="sm" /></button>
               </div></td>
             </tr>)}</tbody>
           </table></div>

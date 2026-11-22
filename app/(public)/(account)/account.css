@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin-block: clamp(20px, 4vw, 54px);
-  background: var(--wp-white);
+  background: var(--wp-surface);
   border: 1px solid var(--wp-line);
   min-height: 640px;
 }
@@ -10,7 +10,7 @@
 .account-inner { width: 100%; max-width: 465px; }
 .wp-site .account-inner h1 { font-size: clamp(2.7rem, 4.45vw, 4.65rem); }
 .account-intro { color: var(--wp-muted); margin-block: 10px 24px; }
-.account-photo { position: relative; min-height: 100%; background: var(--wp-champagne); }
+.account-photo { position: relative; min-height: 100%; background: var(--wp-secondary); }
 .account-photo img { object-position: 50% 50%; }
 .account-provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .account-provider-grid button, .account-submit { min-height: 45px; font-size: .88rem; border-radius: 4px; }
@@ -23,16 +23,16 @@
 .account-field label { display: block; margin-bottom: 4px; font-size: .9rem; font-weight: 600; }
 .account-field input, .account-field select {
   width: 100%; min-height: 44px; padding: 8px 11px;
-  border: 1px solid var(--wp-line); border-radius: 4px; background: var(--wp-paper);
+  border: 1px solid var(--input); border-radius: 4px; background: var(--wp-paper);
 }
-.account-field select:focus-visible { outline: 2px solid var(--wp-burgundy); outline-offset: 4px; }
+.account-field select:focus-visible { outline: 2px solid var(--wp-link); outline-offset: 4px; }
 .account-field input[aria-invalid="true"], .account-field select[aria-invalid="true"] { border-color: var(--destructive); }
 .account-note, .account-field-error { margin-top: 4px; font-size: .83rem; color: var(--wp-muted); }
-.account-field-error { color: #8c2943; }
+.account-field-error { color: var(--destructive); }
 .account-forgot { display: inline-block; margin-top: 10px; }
-.account-feedback { background: var(--wp-champagne); padding: 10px 13px; border-inline-start: 3px solid var(--wp-burgundy); margin-block: 10px; font-size: .88rem; }
-.account-error { background: var(--wp-rose); }
-.account-success { margin-block: 18px; }
+.account-feedback { background: var(--wp-secondary); padding: 10px 13px; border-inline-start: 3px solid var(--wp-link); margin-block: 10px; font-size: .88rem; }
+.account-error { background: var(--error-surface); }
+.account-success { margin-block: 18px; background: var(--success-surface); color: var(--success-foreground); border-color: var(--success-foreground); }
 .account-submit { width: 100%; margin-top: 16px; }
 .account-switch { color: var(--wp-muted); margin-top: 18px; font-size: .9rem; }
 @media (max-width: 900px) {
@@ -46,16 +46,16 @@
 }
 
 /* Image-left authentication reference */
-.account-screen { border-radius:18px; overflow:hidden; box-shadow:0 8px 24px #3b172314; grid-template-columns:.85fr 1.15fr; max-width:1080px; }
+.account-screen { border-radius:18px; overflow:hidden; box-shadow:0 8px 24px var(--shadow-ink); grid-template-columns:.85fr 1.15fr; max-width:1080px; }
 .account-photo { grid-column:1;grid-row:1; }
 .account-panel { grid-column:2;grid-row:1; }
-.account-photo-caption { position:absolute; inset:auto 0 0; padding:26px; color:#fff8f3; background:linear-gradient(transparent,#3a2019e8); }
+.account-photo-caption { position:absolute; inset:auto 0 0; padding:26px; color:var(--photo-foreground); background:linear-gradient(transparent,var(--photo-overlay)); }
 .account-photo-caption p { margin-top:7px; }
 .account-actions-reference { display:flex; flex-direction:column; }
 .account-role-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:5px; }
 .account-role-grid label { border:1px solid var(--wp-line); padding:9px; border-radius:6px; }
-.account-role-grid label:has(:checked) { border-color:var(--wp-burgundy); background:var(--wp-rose); }
+.account-role-grid label:has(:checked) { border-color:var(--wp-link); background:var(--wp-accent); }
 .account-role-grid strong,.account-role-grid span { display:block; }
-.account-role-grid input,.account-password-toggle input { width:auto; min-height:0; accent-color:var(--wp-burgundy); }
+.account-role-grid input,.account-password-toggle input { width:auto; min-height:0; accent-color:var(--wp-link); }
 .account-password-toggle { display:inline-flex; gap:6px; align-items:center; margin-top:11px; margin-right:12px; font-size:.85rem; }
 @media(max-width:740px) { .account-screen{grid-template-columns:1fr}.account-panel{grid-column:1;grid-row:1}.account-photo{grid-column:1;grid-row:2} }

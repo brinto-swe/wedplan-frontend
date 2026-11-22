@@ -1,3 +1,5 @@
+import { UiIcon } from "@/components/ui/icon"
+import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import type { Metadata } from "next"
 import { ActionLink, DemoNotice, EmptyState, ServiceCard } from "@/components/public/ui"
@@ -12,7 +14,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   const filtered = Boolean(filters.q || filters.category || filters.location)
   return (
     <>
-      <header className="wp-browse-hero"><div className="wp-wrap wp-page-heading"><p><Link href="/">Home</Link> › Browse Services</p><h1>Browse Wedding Services</h1><p>Find venues, photographers, florists, and more for your wedding.</p></div></header>
+      <header className="wp-browse-hero"><div className="wp-wrap wp-page-heading"><p className="wp-breadcrumb-inline"><Link href="/">Home</Link> <UiIcon icon={ChevronRight} size="sm" /> Browse Services</p><h1>Browse Wedding Services</h1><p>Find venues, photographers, florists, and more for your wedding.</p></div></header>
       <div className="wp-wrap wp-browse-grid">
       <form action="/services" id="directory-filters" className="wp-filter-rail">
         <div><h2>Filters</h2><Link className="wp-text-link" href="/services">Clear all</Link></div>
