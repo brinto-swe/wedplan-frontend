@@ -1,6 +1,7 @@
+import Link from "next/link"
 import type { Metadata } from "next"
-import { ActionLink, DemoNotice, EmptyState, SearchForm, ServiceCard } from "@/components/public/ui"
-import { browseUrl, listServices, parseFilters } from "@/lib/services"
+import { ActionLink, DemoNotice, EmptyState, ServiceCard } from "@/components/public/ui"
+import { browseUrl, categories, listServices, parseFilters } from "@/lib/services"
 
 export const metadata: Metadata = { title: "Browse wedding services" }
 
@@ -10,10 +11,18 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   const { total, page, totalPages } = result.pagination
   const filtered = Boolean(filters.q || filters.category || filters.location)
   return (
-    <div className="wp-wrap wp-section">
-      <div className="wp-page-heading"><p className="wp-kicker">THE WEDDING DIRECTORY</p><h1>Browse wedding services</h1><p>Find venues, photographers, florists, and more for your wedding.</p></div>
-      <SearchForm filters={filters} />
+    <>
+      <header className="wp-browse-hero"><div className="wp-wrap wp-page-heading"><p><Link href="/">Home</Link> › Browse Services</p><h1>Browse Wedding Services</h1><p>Find venues, photographers, florists, and more for your wedding.</p></div></header>
+      <div className="wp-wrap wp-browse-grid">
+      <form action="/services" id="directory-filters" className="wp-filter-rail">
+        <div><h2>Filters</h2><Link className="wp-text-link" href="/services">Clear all</Link></div>
+        <label>Category<input name="category" defaultValue={filters.category} maxLength={80} list="directory-categories" placeholder="All categories" /></label>
+        <datalist id="directory-categories">{categories.map(({ name }) => <option key={name} value={name} />)}</datalist>
+        <label>Location<input name="location" defaultValue={filters.location} maxLength={120} placeholder="City or region" /></label>
+        <button className="wp-button" type="submit">Apply filters</button>
+      </form>
       <section className="wp-results" aria-label="Search results">
+        <label className="wp-browse-search">Search services<input form="directory-filters" name="q" type="search" placeholder="Search for services…" defaultValue={filters.q} maxLength={120} /></label>
         {result.demo && <DemoNotice />}
         {result.data.length === 0 ? <EmptyState title={page > 1 ? "No services on this page" : "No services found"}>
           <p>{filtered ? "Try changing your search or clearing your filters." : "Check back for new listings."}</p>
@@ -29,5 +38,6 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
         </nav>}
       </section>
     </div>
+    </>
   )
 }

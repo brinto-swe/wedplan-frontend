@@ -50,14 +50,18 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
   const [error, setError] = useState("")
   const [showCallbackError, setShowCallbackError] = useState(oauthError || oauthReturn)
   const [success, setSuccess] = useState("")
+  const [vendorRedirect, setVendorRedirect] = useState(false)
+  const [showPasswords, setShowPasswords] = useState(false)
   const [passwordHelp, setPasswordHelp] = useState(false)
   const authenticated = Boolean(session.data?.user)
+  const user = session.data?.user
+  const isVendor = Boolean(user && "role" in user && user.role === "vendor")
 
   useEffect(() => {
     if (pending || (!success && !authenticated)) return
-    const timer = window.setTimeout(() => router.replace("/services"), success || oauthReturn ? 1100 : 0)
+    const timer = window.setTimeout(() => router.replace(isVendor || vendorRedirect ? "/vendor/dashboard" : "/services"), success || oauthReturn ? 1100 : 0)
     return () => window.clearTimeout(timer)
-  }, [authenticated, oauthReturn, pending, router, success])
+  }, [authenticated, isVendor, oauthReturn, pending, router, success, vendorRedirect])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,7 +102,8 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
           : "We couldn’t confirm your session. Please try signing in again.")
         return
       }
-      setSuccess(signup ? "Your account is ready. Taking you to the directory…" : "Signed in. Taking you to the directory…")
+      setVendorRedirect("role" in current.data.user && current.data.user.role === "vendor")
+      setSuccess(signup ? "Your account is ready. Taking you to WedPlan…" : "Signed in. Taking you to WedPlan…")
     } catch {
       setError("We couldn’t reach WedPlan. Check your connection and try again.")
     } finally {
@@ -130,7 +135,7 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
 
   if (success || (authenticated && !pending)) {
     return <p className="account-feedback account-success" role="status">
-      {success || (oauthReturn ? "Signed in. Taking you to the directory…" : "You’re already signed in. Taking you to the directory…")}
+      {success || (oauthReturn ? "Signed in. Taking you to WedPlan…" : "You’re already signed in. Taking you to WedPlan…")}
     </p>
   }
 
@@ -144,16 +149,7 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
     : ["email", "password"]
 
   return (
-    <div className="account-actions" aria-busy={disabled}>
-      <div className="account-provider-grid">
-        {(["google", "github"] as const).map((provider) => (
-          <Button key={provider} type="button" variant="outline" disabled={disabled} onClick={() => void startOAuth(provider)}>
-            {pending === provider ? "Connecting…" : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
-          </Button>
-        ))}
-      </div>
-      {signup && <p className="account-note">New Google and GitHub accounts start as Customer. Use email to register as a Vendor.</p>}
-      <p className="account-divider"><span>or use email</span></p>
+    <div className="account-actions account-actions-reference" aria-busy={disabled}>
       {(error || callbackMessage) && <p className="account-feedback account-error" role="alert">{error || callbackMessage}</p>}
       {checkingCallback && <p role="status" className="account-note">Checking your session…</p>}
       <form method="post" onSubmit={submit} noValidate className="account-form">
@@ -163,7 +159,7 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
               const { label, ...attributes } = fields[field]
               return <div className={signup && field.includes("assword") ? "account-field" : "account-field account-field-wide"} key={field}>
                 <label htmlFor={field}>{label}</label>
-                <input {...attributes} autoComplete={signup && field === "password" ? "new-password" : attributes.autoComplete}
+                <input {...attributes} type={showPasswords && attributes.type === "password" ? "text" : attributes.type} autoComplete={signup && field === "password" ? "new-password" : attributes.autoComplete}
                   id={field} name={field} required aria-invalid={Boolean(issues[field])}
                   aria-describedby={issues[field] ? `${field}-error` : signup && field === "password" ? "password-hint" : undefined} />
                 {issues[field] ? <p className="account-field-error" id={`${field}-error`}>{issues[field]}</p>
@@ -171,13 +167,14 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
               </div>
             })}
             {signup && <div className="account-field account-field-wide">
-              <label htmlFor="role">Account type</label>
-              <select id="role" name="role" defaultValue="customer" aria-invalid={Boolean(issues.role)} aria-describedby={issues.role ? "role-error" : undefined}>
-                <option value="customer">Customer</option><option value="vendor">Vendor</option>
-              </select>
+              <p id="account-role-label">I want to join as</p><div role="radiogroup" aria-labelledby="account-role-label" className="account-role-grid">
+                <label><input type="radio" name="role" value="customer" defaultChecked /><strong>Customer</strong><span>Find wedding services</span></label>
+                <label><input type="radio" name="role" value="vendor" /><strong>Vendor</strong><span>Offer wedding services</span></label>
+              </div>
               {issues.role && <p id="role-error" className="account-field-error">{issues.role}</p>}
             </div>}
           </div>
+          <label className="account-password-toggle"><input type="checkbox" checked={showPasswords} onChange={(event)=>setShowPasswords(event.target.checked)} /> Show passwords</label>
           {!signup && <>
             <a href="#password-help" className="wp-text-link account-forgot" aria-expanded={passwordHelp} onClick={() => setPasswordHelp(true)}>Forgot password?</a>
             <p className="account-feedback" id="password-help" tabIndex={-1} hidden={!passwordHelp}>Password reset is currently unavailable. If you signed up with Google or GitHub, use that provider to sign in.</p>
@@ -187,6 +184,15 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
           </Button>
         </fieldset>
       </form>
+      <p className="account-divider"><span>Or continue with</span></p>
+      <div className="account-provider-grid">
+        {(["google", "github"] as const).map((provider) => (
+          <Button key={provider} type="button" variant="outline" disabled={disabled} onClick={() => void startOAuth(provider)}>
+            {pending === provider ? "Connecting…" : `Continue with ${provider === "google" ? "Google" : "GitHub"}`}
+          </Button>
+        ))}
+      </div>
+      {signup && <p className="account-note">New Google and GitHub accounts start as Customer. Use email to register as a Vendor.</p>}
     </div>
   )
 }

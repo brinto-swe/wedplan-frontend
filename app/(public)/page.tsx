@@ -1,12 +1,18 @@
 import Image from "next/image"
 import Link from "next/link"
+import { Camera, CookingPot, Flower2, MapPin, Music, Car, Video, Shirt, Search, CalendarDays, Check } from "lucide-react"
 import { Suspense } from "react"
 
 import { ActionLink, DemoNotice, EmptyState, SearchForm, ServiceCard } from "@/components/public/ui"
-import { browseUrl, categories, listServices } from "@/lib/services"
+import { browseUrl, listServices } from "@/lib/services"
+
+const homeCategories = [
+  ["Photography", Camera], ["Videography", Video], ["Bridal Wear", Shirt], ["Decoration", Flower2],
+  ["Catering", CookingPot], ["Entertainment", Music], ["Transportation", Car], ["Venues", MapPin],
+] as const
 
 async function FeaturedServices() {
-  const result = await listServices({ page: 1 }, 3)
+  const result = await listServices({ page: 1 }, 6)
   return <>
     {result.demo && <DemoNotice />}
     {result.data.length
@@ -21,10 +27,10 @@ export default function HomePage() {
       <section className="wp-wrap wp-hero">
         <div className="wp-hero-grid">
           <div className="wp-hero-copy">
-            <p className="wp-kicker">THE WEDDING SERVICES DIRECTORY</p>
-            <h1>Your wedding,<br /><em>your way.</em></h1>
+            <p className="wp-kicker">PLAN YOUR PERFECT WEDDING</p>
+            <h1>Discover, Book &amp; Plan Your Dream Wedding</h1>
             <p>Find the venues, makers, and wedding professionals who can bring your day to life.</p>
-            <ActionLink href="/services">Explore services</ActionLink>
+            <div className="wp-hero-actions"><ActionLink href="/services">Browse Services</ActionLink><ActionLink href="/sign-up" secondary>Become a Vendor</ActionLink></div>
           </div>
           <div className="wp-hero-image">
             <Image src="/weddings/hero.webp" fill sizes="(max-width: 740px) 100vw, 58vw" alt="An outdoor wedding reception at a stone villa, with flowers and candlelit tables" preload />
@@ -34,22 +40,22 @@ export default function HomePage() {
       </section>
 
       <section className="wp-wrap wp-section" id="categories">
-        <div className="wp-section-heading"><div><p className="wp-kicker">THE WEDDING DIRECTORY</p><h2>Explore by category</h2></div><Link className="wp-text-link" href="/services">View all services</Link></div>
+        <div className="wp-section-heading"><div><p className="wp-kicker">THE WEDDING DIRECTORY</p><h2>Wedding Service Categories</h2></div><Link className="wp-text-link" href="/services">View all services</Link></div>
         <div className="wp-category-grid">
-          {categories.map((category) => <Link key={category.name} className="wp-category" href={browseUrl({ page: 1, category: category.name })}>
-            <Image src={category.image} fill sizes="(max-width: 740px) 50vw, 25vw" alt="" />
-            <h3>{category.name}</h3>
+          {homeCategories.map(([name, Icon]) => <Link key={name} className="wp-category wp-category-icon" href={browseUrl({ page: 1, category: name })}>
+            <Icon size={29} strokeWidth={1.65} aria-hidden="true" /><h3>{name}</h3>
           </Link>)}
         </div>
       </section>
 
       <section className="wp-featured">
         <div className="wp-wrap wp-section">
-          <div className="wp-section-heading"><div><h2>Featured services</h2><p>Find the right fit for the day you have in mind.</p></div><Link className="wp-text-link" href="/services">Browse the directory</Link></div>
+          <div className="wp-section-heading"><div><h2>Popular Wedding Services</h2><p>Find the right fit for the day you have in mind.</p></div><Link className="wp-text-link" href="/services">Browse the directory</Link></div>
           <Suspense fallback={<p className="wp-notice" role="status">Loading services…</p>}><FeaturedServices /></Suspense>
         </div>
       </section>
 
+      <section className="wp-home-steps"><div className="wp-wrap"><h2>Plan Your Wedding in Three Steps</h2><div>{[[Search, "Discover services", "Browse venues, photographers, and more."], [CalendarDays, "Request a booking", "Booking requests will be available when booking launches."], [Check, "Get confirmed", "Vendors will confirm availability through the booking workflow."]].map(([Icon, title, copy]) => { const StepIcon = Icon as typeof Search; return <article key={String(title)}><StepIcon size={28} aria-hidden="true" /><h3>{String(title)}</h3><p>{String(copy)}</p></article> })}</div></div></section>
       <section className="wp-wrap wp-section">
         <div className="wp-cta">
           <h2>Start with what matters most.</h2>

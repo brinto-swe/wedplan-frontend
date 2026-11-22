@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useRef } from "react"
-import { Flower2, Menu } from "lucide-react"
+import { HeartHandshake, Menu } from "lucide-react"
 
 function Wordmark() {
-  return <Link href="/" className="wp-brand"><Flower2 size={23} strokeWidth={1.45} aria-hidden="true" /> WedPlan<span>.</span></Link>
+  return <Link href="/" className="wp-brand"><HeartHandshake size={23} strokeWidth={1.45} aria-hidden="true" /> WedPlan</Link>
 }
 
 export function PublicHeader() {
@@ -20,12 +20,12 @@ export function PublicHeader() {
         <nav className="wp-desktop-nav" aria-label="Main navigation">
           <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Home</Link><Link href="/services" aria-current={pathname === "/services" ? "page" : undefined}>Browse services</Link><Link href="/#categories">Categories</Link>
         </nav>
-        <Link href="/sign-in" className="wp-button wp-button-outline wp-desktop-signin">Sign in</Link>
+        <div className="wp-desktop-signin wp-auth-links"><Link href="/sign-in" className="wp-button wp-button-outline">Sign in</Link><Link href="/sign-up" className="wp-button">Sign up</Link></div>
         <details className="wp-mobile-nav" ref={menu}>
           <summary aria-label="Navigation menu"><Menu size={23} aria-hidden="true" /></summary>
           <nav aria-label="Mobile navigation">
             <Link href="/" onClick={closeMenu}>Home</Link><Link href="/services" onClick={closeMenu}>Browse services</Link>
-            <Link href="/#categories" onClick={closeMenu}>Categories</Link><Link href="/sign-in" onClick={closeMenu}>Sign in</Link>
+            <Link href="/#categories" onClick={closeMenu}>Categories</Link><Link href="/sign-in" onClick={closeMenu}>Sign in</Link><Link href="/sign-up" onClick={closeMenu}>Sign up</Link>
           </nav>
         </details>
       </div>

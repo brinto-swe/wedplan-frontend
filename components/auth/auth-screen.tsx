@@ -11,7 +11,7 @@ export function AuthScreen({ mode, query }: { mode: AuthMode; query: AuthQuery }
     <section className="wp-wrap account-screen" aria-labelledby="account-heading">
       <div className="account-panel">
         <div className="account-inner">
-          <h1 id="account-heading">{signup ? "Create your account" : "Welcome back"}</h1>
+          <h1 id="account-heading">{signup ? "Create your account" : "Sign In to WedPlan"}</h1>
           <p className="account-intro">{signup
             ? "Find the right people for your wedding or share your services with couples."
             : "Sign in to your WedPlan account."}</p>
@@ -29,6 +29,7 @@ export function AuthScreen({ mode, query }: { mode: AuthMode; query: AuthQuery }
           fill sizes="(max-width: 520px) 100vw, (max-width: 900px) 90vw, 48vw"
           preload
         />
+        <div className="account-photo-caption"><h2>{signup ? "Join WedPlan" : "Welcome Back"}</h2><p>{signup ? "Start planning your dream wedding." : "Find the people and places behind your wedding."}</p></div>
       </div>
     </section>
   )

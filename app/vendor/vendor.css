@@ -1,0 +1,136 @@
+.vendor-site { background: var(--wp-paper); color: var(--wp-ink); }
+.vendor-layout { min-height: 100svh; display: grid; grid-template-columns: 236px minmax(0, 1fr); }
+.vendor-sidebar { display: flex; flex-direction: column; gap: 23px; padding: 25px 20px; border-inline-end: 1px solid var(--wp-line); background: var(--wp-champagne); }
+.vendor-sidebar .wp-brand { margin-inline: 7px; }
+.vendor-sidebar-label { font-size: .82rem; color: var(--wp-muted); margin-inline: 9px; }
+.vendor-sidebar nav, .vendor-mobile-links nav { display: grid; gap: 5px; }
+.vendor-sidebar nav a, .vendor-mobile-links nav a { display: flex; align-items: center; gap: 10px; font-size: .91rem; font-weight: 550; padding: 10px 12px; border-radius: 5px; }
+.vendor-sidebar nav a:hover, .vendor-sidebar nav a[aria-current="page"], .vendor-mobile-links nav a:hover, .vendor-mobile-links nav a[aria-current="page"] { background: var(--wp-rose); color: var(--wp-burgundy); }
+.vendor-public-link { color: var(--wp-burgundy); text-decoration: underline; text-underline-offset: 4px; font-size: .9rem; margin: auto 9px 4px; }
+.vendor-topbar { min-height: 70px; padding: 12px clamp(16px, 4vw, 45px); background: var(--wp-white); border-bottom: 1px solid var(--wp-line); display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.vendor-topbar > span:first-child { overflow-wrap: anywhere; }
+.vendor-mobile-links { display: none; }
+.vendor-main { max-width: 1490px; padding: clamp(20px, 4vw, 48px); margin-inline: auto; }
+.vendor-stack { display: grid; gap: 20px; }
+.vendor-editor { max-width: 900px; }
+.vendor-gateway { width: min(640px, calc(100% - 32px)); margin: clamp(50px, 12vh, 145px) auto; }
+.vendor-heading, .vendor-welcome { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.vendor-welcome { background: var(--wp-champagne); border: 1px solid var(--wp-line); border-radius: 6px; padding: clamp(18px, 4vw, 36px); }
+.wp-site .vendor-heading h1, .wp-site .vendor-welcome h1 { font-size: clamp(2.8rem, 5vw, 4.6rem); }
+.vendor-heading p, .vendor-welcome p { margin-top: 8px; color: var(--wp-muted); }
+.vendor-heading .wp-text-link { display: inline-block; margin-bottom: 8px; }
+.vendor-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.vendor-card, .vendor-state, .vendor-confirm { padding: clamp(15px, 2vw, 23px); background: var(--wp-white); border: 1px solid var(--wp-line); border-radius: 6px; min-width: 0; }
+.vendor-stat { display: grid; align-content: start; gap: 8px; }
+.vendor-stat svg { color: var(--wp-burgundy); }
+.vendor-stat p, .vendor-muted { color: var(--wp-muted); font-size: .9rem; }
+.vendor-stat strong { font-size: clamp(.95rem, 1.6vw, 1.4rem); overflow-wrap: anywhere; }
+.vendor-dashboard-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: 15px; }
+.wp-site .vendor-card h2, .wp-site .vendor-state h2, .wp-site .vendor-confirm h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin-bottom: 9px; }
+.vendor-plan p { margin-block: 9px; }
+.vendor-plan .wp-button { margin-top: 4px; }
+.vendor-activity li { display: flex; align-items: start; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--wp-line); }
+.vendor-activity a, .vendor-row-actions a, .vendor-row-actions button, .vendor-error a { text-decoration: underline; text-underline-offset: 3px; color: var(--wp-burgundy); overflow-wrap: anywhere; }
+.vendor-activity time, .vendor-activity p { color: var(--wp-muted); font-size: .86rem; }
+.vendor-plan-strip, .vendor-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 10px 15px; border-radius: 5px; background: var(--wp-champagne); }
+.vendor-badge { display: inline-flex; align-items: center; white-space: nowrap; border-radius: 100px; padding: 4px 9px; background: var(--wp-rose); color: var(--wp-burgundy); font-size: .83rem; font-weight: 650; }
+.vendor-active { background: #e8efe5; color: #305637; }
+.vendor-error, .vendor-confirm { background: var(--wp-rose); }
+.vendor-state p, .vendor-confirm p { margin-block: 8px 13px; color: var(--wp-muted); }
+.vendor-loading { color: var(--wp-muted); }
+.vendor-loading div { height: 95px; margin-top: 8px; border-radius: 6px; background: var(--wp-champagne); }
+.vendor-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.vendor-toolbar label, .vendor-form label { display: grid; gap: 5px; font-size: .9rem; font-weight: 600; min-width: 0; }
+.vendor-search { flex: 1 1 220px; }
+.vendor-search > span:last-child { display: flex; align-items: center; padding-inline-start: 10px; background: var(--wp-paper); border: 1px solid var(--wp-line); border-radius: 4px; }
+.vendor-search input { flex: 1; }
+.vendor-toolbar input, .vendor-toolbar select, .vendor-form input, .vendor-form textarea, .vendor-form select {
+  background: var(--wp-paper); border: 1px solid var(--wp-line); border-radius: 4px; padding: 8px 10px; width: 100%; min-height: 43px; font-weight: 400;
+}
+.vendor-toolbar input { border-color: transparent; }
+.vendor-table-wrap { overflow-x: auto; }
+.vendor-table { width: 100%; min-width: 520px; text-align: left; border-collapse: collapse; }
+.vendor-table th, .vendor-table td { border-bottom: 1px solid var(--wp-line); padding: 11px 8px; }
+.vendor-table td:first-child span { display: block; color: var(--wp-muted); font-size: .86rem; }
+.vendor-table td:first-child strong { overflow-wrap: anywhere; }
+.vendor-row-actions, .vendor-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.vendor-row-actions button { cursor: pointer; }
+.vendor-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; color: var(--wp-muted); font-size: .9rem; }
+.vendor-form legend { font-family: var(--wp-heading); font-size: 2rem; margin-bottom: 12px; }
+.vendor-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.vendor-field-wide { grid-column: 1 / -1; }
+.vendor-form textarea { resize: vertical; }
+.vendor-form [aria-invalid="true"] { border-color: var(--destructive); }
+.vendor-field-error { color: #8c2943; font-size: .85rem; }
+.vendor-media { margin-top: 18px; border: 1px dashed var(--wp-line); padding: 13px; display: flex; align-items: start; gap: 10px; color: var(--wp-muted); }
+.vendor-media svg { flex: none; }
+.wp-site .vendor-media h3 { font-size: 1.5rem; color: var(--wp-ink); }
+.vendor-media p { margin-top: 4px; font-size: .9rem; }
+.vendor-form .vendor-actions { margin-top: 15px; }
+.vendor-form .vendor-notice, .vendor-form > .vendor-field-error { margin-top: 10px; }
+@media (max-width: 1160px) { .vendor-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 820px) {
+  .vendor-layout { grid-template-columns: 1fr; }
+  .vendor-sidebar { display: none; }
+  .vendor-mobile-links { display: block; position: relative; }
+  .vendor-mobile-links summary { display: flex; align-items: center; gap: 3px; list-style: none; cursor: pointer; color: var(--wp-burgundy); padding: 8px 0; }
+  .vendor-mobile-links summary::-webkit-details-marker { display: none; }
+  .vendor-mobile-links nav { position: absolute; right: 0; top: 100%; min-width: 170px; z-index: 3; background: var(--wp-white); box-shadow: 0 8px 20px #39201916; border: 1px solid var(--wp-line); padding: 5px; }
+}
+@media (max-width: 540px) {
+  .vendor-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vendor-dashboard-grid, .vendor-form-grid { grid-template-columns: 1fr; }
+  .vendor-topbar { flex-wrap: wrap; justify-content: flex-start; }
+  .vendor-mobile-links { margin-inline-start: auto; }
+  .vendor-table { min-width: 0; }
+  .vendor-table th, .vendor-table td { padding: 8px 4px; font-size: .82rem; }
+  .vendor-row-actions { flex-direction: column; align-items: start; gap: 5px; }
+}
+
+/* Vendor reference shell */
+.vendor-layout { grid-template-columns: 270px minmax(0, 1fr); }
+.vendor-sidebar { background: #fbf1f0; }
+.vendor-sidebar .wp-brand { color: var(--wp-ink); }
+.vendor-sidebar .wp-brand svg { color: #a33536; }
+.vendor-identity { display:flex; align-items:center; gap:10px; padding: 10px 4px; overflow-wrap:anywhere; }
+.vendor-identity p { font-size:.83rem; color:var(--wp-muted); }
+.vendor-avatar { display:grid; place-items:center; flex:none; width:48px; height:48px; border-radius:50%; background:var(--wp-rose); color:var(--wp-burgundy); font-weight:700; }
+.vendor-sidebar nav a[aria-current="page"] { color:white; background:#aa4747; }
+.vendor-nav-disabled { display:flex; align-items:center; gap:10px; padding:10px 12px; font-size:.9rem; color:var(--wp-muted); }
+.vendor-sidebar-plan { padding:22px 15px; text-align:center; background:#f9e5e2; color:#8f2c31; border-radius:13px; }
+.vendor-sidebar-plan svg { margin:0 auto 8px; }
+.vendor-sidebar-plan p { margin-top:7px; color:var(--wp-ink); font-size:.87rem; }
+.vendor-crumb { margin-inline-end:auto; display:flex; align-items:center; gap:9px; font-size:.9rem; }
+.vendor-crumb a:hover { text-decoration:underline; }
+.vendor-main { padding:clamp(14px,2vw,29px); }
+.vendor-banner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; min-height:135px; padding:clamp(18px,3vw,38px); border-radius:13px; background:linear-gradient(90deg,#fae9e7 36%,#fae9e7d9 49%,#fae9e72a 78%),url('/weddings/hero.webp') right 48% / 70% auto no-repeat,#fae9e7; }
+.wp-site .vendor-banner h1 { font-size:clamp(2.45rem,4vw,3.9rem); }
+.vendor-banner p { max-width:44ch; margin-top:9px; }
+.vendor-card, .vendor-state, .vendor-confirm { border-radius:12px; box-shadow:0 2px 6px #3b17230a; }
+.vendor-stats { grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+.vendor-stat { display:flex; align-items:center; gap:12px; }
+.vendor-stat-icon { display:grid; place-items:center; width:48px; height:48px; flex:none; border-radius:13px; background:#f6dada; }
+.vendor-stat strong { font:600 1.9rem/1 var(--wp-heading); }
+.vendor-stat p { margin-top:3px; }
+.vendor-dashboard-grid { grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); }
+.vendor-section-head { display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:8px; }
+.vendor-dashboard-grid .vendor-actions { margin-top:14px; }
+.vendor-table thead { background:#faeeee; }
+.vendor-row-actions > * { padding:7px; background:#f9eded; border-radius:6px; }
+.vendor-editor { max-width:none; }
+.vendor-editor-grid { display:grid; grid-template-columns:minmax(0,2.2fr) minmax(240px,1fr); gap:14px; }
+.vendor-editor-aside { display:grid; align-content:start; gap:14px; }
+.vendor-status legend { font-size:1.55rem; margin:0; }
+.vendor-status label { display:flex; align-items:center; gap:8px; }
+.vendor-status input { width:auto; min-height:0; accent-color:#a33536; }
+.vendor-status p { margin:4px 0 12px 22px; font-size:.85rem; color:var(--wp-muted); }
+.vendor-guidelines { background:#fbebea; }
+.vendor-guidelines li { display:flex; gap:8px; margin-block:8px; font-size:.9rem; }
+.vendor-guidelines svg { color:#a33536; flex:none; }
+@media(max-width:820px){.vendor-layout,.vendor-editor-grid{grid-template-columns:1fr}.vendor-banner{background:linear-gradient(90deg,#fae9e7 40%,#fae9e7af),url('/weddings/hero.webp') center / cover}.vendor-table{min-width:650px}}
+@media(max-width:540px){.vendor-dashboard-grid{grid-template-columns:1fr}.vendor-stat-icon{width:36px;height:36px}.vendor-crumb{width:100%}}
+.vendor-confirm[open] { position:fixed; inset:0; margin:auto; width:min(460px, calc(100% - 32px)); color:var(--wp-ink); background:var(--wp-white); }
+.vendor-confirm::backdrop { background:#24141d66; }
+.vendor-confirm .vendor-actions { justify-content:flex-end; }
+.vendor-service-cell { display:flex; align-items:center; gap:10px; min-width:155px; }
+.vendor-service-cell img { width:70px; height:43px; object-fit:cover; border-radius:5px; flex:none; }
