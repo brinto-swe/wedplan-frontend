@@ -59,6 +59,7 @@ const navigation = [
   { href: "/vendor/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/vendor/services", label: "My Services", icon: Layers3 },
   { href: "/vendor/services/new", label: "Add Service", icon: Plus },
+  { href: "/vendor/bookings", label: "Booking Requests", icon: CalendarDays },
 ]
 
 function VendorGate({ children }: { children: ReactNode }) {
@@ -92,14 +93,14 @@ function VendorGate({ children }: { children: ReactNode }) {
             const active = pathname === href || (href === "/vendor/services" && pathname.endsWith("/edit"))
             return <Link key={href} href={href} aria-current={active ? "page" : undefined}><UiIcon icon={Icon} size="sm" />{label}</Link>
           })}
-          {[[CalendarDays,"Booking Requests"],[Crown,"Subscription"],[User,"Profile Settings"]].map(([Icon, label]) => { const ItemIcon = Icon as typeof CalendarDays; return <span className="vendor-nav-disabled" key={String(label)} aria-disabled="true"><UiIcon icon={ItemIcon} size="sm" />{String(label)}</span> })}
+          {[[Crown,"Subscription"],[User,"Profile Settings"]].map(([Icon, label]) => { const ItemIcon = Icon as typeof CalendarDays; return <span className="vendor-nav-disabled" key={String(label)} aria-disabled="true"><UiIcon icon={ItemIcon} size="sm" />{String(label)}</span> })}
         </nav>
         <div className="vendor-sidebar-plan"><UiIcon icon={Crown} size="xl" /><strong>{plan === "Premium" ? "Premium Plan" : plan === "Free" ? "Free Plan" : "Subscription"}</strong><p>{plan === "Premium" ? "Unlimited active service listings." : plan === "Free" ? "Publish up to three active services." : "Plan information unavailable."}</p></div>
         <Link href="/services" className="vendor-public-link">Public directory</Link>
       </aside>
       <div className="vendor-content">
         <header className="vendor-topbar">
-          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : "My Services"}</strong></>}</div>
+          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === "/vendor/bookings" ? "Booking Requests" : pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : "My Services"}</strong></>}</div>
           <span>{profile.data.name}</span>
           <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
           <ThemeSelect />

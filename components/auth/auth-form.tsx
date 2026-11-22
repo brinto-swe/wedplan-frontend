@@ -41,7 +41,7 @@ const fields = {
   confirmPassword: { label: "Confirm password", type: "password", autoComplete: "new-password", maxLength: 128 },
 } as const
 
-export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oauthReturn: boolean; oauthError: boolean }) {
+export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode: AuthMode; oauthReturn: boolean; oauthError: boolean; destination?: string }) {
   const signup = mode === "sign-up"
   const router = useRouter()
   const session = authClient.useSession()
@@ -50,18 +50,18 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
   const [error, setError] = useState("")
   const [showCallbackError, setShowCallbackError] = useState(oauthError || oauthReturn)
   const [success, setSuccess] = useState("")
-  const [vendorRedirect, setVendorRedirect] = useState(false)
+  const [confirmedRole, setConfirmedRole] = useState<string>()
   const [showPasswords, setShowPasswords] = useState(false)
   const [passwordHelp, setPasswordHelp] = useState(false)
   const authenticated = Boolean(session.data?.user)
   const user = session.data?.user
-  const isVendor = Boolean(user && "role" in user && user.role === "vendor")
+  const role = confirmedRole ?? (user && "role" in user ? user.role : undefined)
 
   useEffect(() => {
     if (pending || (!success && !authenticated)) return
-    const timer = window.setTimeout(() => router.replace(isVendor || vendorRedirect ? "/vendor/dashboard" : "/services"), success || oauthReturn ? 1100 : 0)
+    const timer = window.setTimeout(() => router.replace(role === "vendor" ? "/vendor/dashboard" : role === "customer" ? destination ?? "/customer/dashboard" : "/services"), success || oauthReturn ? 1100 : 0)
     return () => window.clearTimeout(timer)
-  }, [authenticated, isVendor, oauthReturn, pending, router, success, vendorRedirect])
+  }, [authenticated, destination, oauthReturn, pending, role, router, success])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -102,7 +102,7 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
           : "We couldn’t confirm your session. Please try signing in again.")
         return
       }
-      setVendorRedirect("role" in current.data.user && current.data.user.role === "vendor")
+      if ("role" in current.data.user && typeof current.data.user.role === "string") setConfirmedRole(current.data.user.role)
       setSuccess(signup ? "Your account is ready. Taking you to WedPlan…" : "Signed in. Taking you to WedPlan…")
     } catch {
       setError("We couldn’t reach WedPlan. Check your connection and try again.")
@@ -119,10 +119,16 @@ export function AuthForm({ mode, oauthReturn, oauthError }: { mode: AuthMode; oa
     setShowCallbackError(false)
     try {
       const origin = window.location.origin
+      const callback = (status: string) => {
+        const url = new URL(`/${mode}`, origin)
+        url.searchParams.set("oauth", status)
+        if (destination) url.searchParams.set("next", destination)
+        return url.href
+      }
       const { data, error } = await authClient.signIn.social({
         provider,
-        callbackURL: new URL(`/${mode}?oauth=return`, origin).href,
-        errorCallbackURL: new URL(`/${mode}?oauth=failed`, origin).href,
+        callbackURL: callback("return"),
+        errorCallbackURL: callback("failed"),
       })
       // Better Auth follows the provider URL automatically when redirect is true.
       if (!error && data?.redirect && data.url) return

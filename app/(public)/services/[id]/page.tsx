@@ -1,3 +1,4 @@
+import { BookingRequest } from "@/components/bookings/request-form"
 import { UiIcon } from "@/components/ui/icon"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -11,7 +12,7 @@ import { formattedPrice, getService, serviceImages } from "@/lib/services"
 
 export const metadata: Metadata = { title: "Service details" }
 
-export default async function ServicePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ServicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ book?: string }> }) {
   const { id } = await params
   const result = await getService(id)
   if (result.kind === "missing") notFound()
@@ -42,8 +43,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
         </div>
         <aside className="wp-pricing">
           <h2>Request Booking</h2><p className="wp-kicker">STARTING PRICE</p><p className="wp-detail-price">{formattedPrice(service)}</p>
-          <button type="button" className="wp-button" disabled aria-describedby="booking-status">Request booking</button>
-          <p id="booking-status">Online booking is coming soon.</p>
+          <BookingRequest serviceId={id} autoOpen={(await searchParams).book === "1"} />
         </aside>
       </div>
     </div>
