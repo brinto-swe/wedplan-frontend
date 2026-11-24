@@ -11,7 +11,7 @@ import { UiIcon } from "@/components/ui/icon"
 import { ThemeSelect } from "@/components/ui/theme-select"
 import { authClient } from "@/lib/auth"
 import { AdminApiError, getAdminProfile } from "@/lib/admin"
-import { adminDashboardPath, adminReturn, adminServicesPath, adminUsersPath } from "@/lib/admin-navigation"
+import { adminDashboardPath, adminReturn, adminServicesPath, adminTransactionsPath, adminUsersPath } from "@/lib/admin-navigation"
 import { WorkspaceState } from "@/components/vendor/workspace"
 
 const signInFor = (pathname: string) => "/sign-in?next=" + encodeURIComponent(adminReturn(pathname) ?? adminDashboardPath)
@@ -21,7 +21,7 @@ const sections = [
   { label: "Services", href: adminServicesPath, icon: Layers3 },
   { label: "Bookings", href: adminDashboardPath + "#admin-bookings", icon: CalendarDays },
   { label: "Subscriptions", href: adminDashboardPath + "#admin-platform", icon: Crown },
-  { label: "Transactions", href: adminDashboardPath + "#admin-revenue", icon: ReceiptText },
+  { label: "Transactions", href: adminTransactionsPath, icon: ReceiptText },
 ]
 
 export function AdminRequestError({ error, retry, title = "Unable to load the dashboard" }: { error: unknown; retry: () => void; title?: string }) {
@@ -61,6 +61,11 @@ function Gate({ children }: { children: ReactNode }) {
   }
 
   const { name } = profile.data
+  const pageTitle = {
+    [adminUsersPath]: "Users Management",
+    [adminServicesPath]: "Manage Services",
+    [adminTransactionsPath]: "Transactions",
+  }[pathname] ?? "Overview"
   const nav = sections.map(({ label, href, icon }) => <Link key={label} href={href} aria-current={href === pathname ? "page" : undefined}>
     <UiIcon icon={icon} size="sm" />{label}
   </Link>)
@@ -80,7 +85,7 @@ function Gate({ children }: { children: ReactNode }) {
     </aside>
     <div className="vendor-content">
       <header className="vendor-topbar">
-        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === adminUsersPath ? "Users Management" : pathname === adminServicesPath ? "Manage Services" : "Overview"}</strong></div>
+        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pageTitle}</strong></div>
         <span className="admin-topbar-name">{name}</span><ThemeSelect />
         <details className="vendor-mobile-links">
           <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>

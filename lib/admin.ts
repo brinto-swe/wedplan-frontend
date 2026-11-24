@@ -115,3 +115,44 @@ export async function updateAdminService(id: string, patch: Partial<ServiceInput
 export async function deleteAdminService(id: string) {
   await adminRequest(adminServicePath(id), undefined, undefined, "DELETE")
 }
+
+const adminTransaction = z.object({
+  id: z.string(),
+  vendorId: z.string(),
+  vendor: vendorDisplay.nullable(),
+  amount: count,
+  amountUnit: z.literal("minor"),
+  currency: z.string().regex(/^[a-z]{3}$/i),
+  status: z.enum(["paid", "failed"]),
+  type: z.literal("subscription"),
+  createdAt: z.iso.datetime(),
+  dateBasis: z.literal("stripe_invoice_event"),
+})
+const transactionList = z.object({ data: z.array(adminTransaction), pagination: adminPagination })
+const transactionDetail = z.object({
+  data: adminTransaction.extend({ invoiceCreatedAt: z.null(), billingPeriod: z.null() }),
+})
+
+export type AdminTransaction = z.infer<typeof adminTransaction>
+export type AdminTransactionFilters = {
+  q: string
+  status: AdminTransaction["status"] | ""
+  vendorId: string
+  currency: string
+  from: string
+  to: string
+}
+
+const adminTransactionsEndpoint = "/api/admin/transactions"
+
+export async function listAdminTransactions(filters: AdminTransactionFilters, page: number, signal: AbortSignal) {
+  const params = new URLSearchParams({ page: String(page), limit: "8" })
+  for (const [name, value] of Object.entries(filters)) {
+    if (value) params.set(name, value)
+  }
+  return transactionList.parse(await adminRequest(adminTransactionsEndpoint + "?" + params, signal))
+}
+
+export async function getAdminTransaction(id: string, signal: AbortSignal) {
+  return transactionDetail.parse(await adminRequest(adminTransactionsEndpoint + "/" + encodeURIComponent(id), signal)).data
+}

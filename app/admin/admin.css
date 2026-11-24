@@ -94,6 +94,19 @@
 .admin-service-form :is(input,textarea) { padding:7px; border:1px solid var(--wp-line); background:var(--wp-paper); border-radius:6px; width:100%; }
 .admin-service-form textarea { min-height:80px; resize:vertical; }
 .admin-services .vendor-confirm[open] { max-height:calc(100dvh - 32px); overflow:auto; }
+.admin-transactions { grid-template-columns:minmax(0,1fr); }
+.admin-transactions .vendor-table-wrap { position:relative; max-width:100%; }
+.admin-transactions .vendor-table { min-width:670px; }
+.admin-transaction-id { overflow-wrap:anywhere; }
+.admin-transaction-amount { font-weight:650; white-space:nowrap; }
+.admin-transaction-vendor { overflow-wrap:anywhere; }
+.admin-transaction-vendor p, .admin-transaction-date-basis { font-size:.85rem; color:var(--wp-muted); }
+.admin-transaction-date-basis { display:flex; align-items:center; gap:6px; }
+.admin-transaction-date-basis svg, .admin-transactions .vendor-section-head h2 svg { color:var(--wp-link); flex:none; }
+.admin-transactions .vendor-section-head h2 { display:flex; gap:8px; align-items:center; }
+.admin-transaction-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr)); }
+.admin-transaction-filters .vendor-search input { min-width:0; }
+.admin-transaction-filters .vendor-actions { align-self:end; }
 @media (max-width:820px) {
   .vendor-layout.admin-layout { grid-template-columns:minmax(0,1fr); }
   .admin-layout .vendor-content { min-width:0; }
