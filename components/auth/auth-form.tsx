@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { authClient, signInEmail, signUpEmail } from "@/lib/auth"
+import { billingReturn } from "@/lib/billing-navigation"
+import { bookingReturn } from "@/lib/booking-navigation"
 
 export type AuthMode = "sign-in" | "sign-up"
 type Provider = "google" | "github"
@@ -59,7 +61,9 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
 
   useEffect(() => {
     if (pending || (!success && !authenticated)) return
-    const timer = window.setTimeout(() => router.replace(role === "vendor" ? "/vendor/dashboard" : role === "customer" ? destination ?? "/customer/dashboard" : "/services"), success || oauthReturn ? 1100 : 0)
+    const target = role === "vendor" ? billingReturn(destination) ?? "/vendor/dashboard"
+      : role === "customer" ? bookingReturn(destination) ?? "/customer/dashboard" : "/services"
+    const timer = window.setTimeout(() => router.replace(target), success || oauthReturn ? 1100 : 0)
     return () => window.clearTimeout(timer)
   }, [authenticated, destination, oauthReturn, pending, role, router, success])
 

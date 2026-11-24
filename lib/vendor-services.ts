@@ -39,7 +39,6 @@ export function vendorPlan(user: object): Plan {
   if (!("subscriptionPlan" in user)) return "Unavailable"
   if (user.subscriptionPlan !== "premium") return "Free"
   const expiresAt = "subscriptionExpiresAt" in user ? user.subscriptionExpiresAt : undefined
-  if (expiresAt == null) return "Premium"
   const expiry = typeof expiresAt === "string" || expiresAt instanceof Date ? new Date(expiresAt).getTime() : NaN
   return Number.isFinite(expiry) && expiry > Date.now() ? "Premium" : "Free"
 }
@@ -73,7 +72,7 @@ async function request(path: string, token: string, options: RequestInit = {}) {
   throw new VendorApiError(response.status, messages[response.status] ?? "The service API is unavailable. Please try again.", fields)
 }
 
-async function vendorAccess(signal?: AbortSignal) {
+export async function vendorAccess(signal?: AbortSignal) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
   if (!data?.token) {
     const status = error?.status ?? 401

@@ -4,13 +4,14 @@ import { UiIcon } from "@/components/ui/icon"
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { ThemeSelect } from "@/components/ui/theme-select"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { CalendarDays, ChevronDown, ChevronRight, Crown, HeartHandshake, LayoutDashboard, Layers3, Plus, User } from "lucide-react"
 
 import { ActionLink } from "@/components/public/ui"
 import { authClient } from "@/lib/auth"
+import { billingReturn } from "@/lib/billing-navigation"
 import { getVendorProfile, listVendorServices, VendorApiError, vendorPlan, type Plan, type VendorProfile } from "@/lib/vendor-services"
 
 const WorkspaceContext = createContext<{ profile: VendorProfile; plan: Plan } | null>(null)
@@ -60,6 +61,7 @@ const navigation = [
   { href: "/vendor/services", label: "My Services", icon: Layers3 },
   { href: "/vendor/services/new", label: "Add Service", icon: Plus },
   { href: "/vendor/bookings", label: "Booking Requests", icon: CalendarDays },
+  { href: "/vendor/subscription", label: "Subscription", icon: Crown },
 ]
 
 function VendorGate({ children }: { children: ReactNode }) {
@@ -71,8 +73,14 @@ function VendorGate({ children }: { children: ReactNode }) {
     queryFn: ({ signal }) => getVendorProfile(signal),
   })
   const pathname = usePathname()
+  const router = useRouter()
+  const returnTo = billingReturn(pathname)
+  const signIn = returnTo && !user && (!session.error || session.error.status === 401)
+  useEffect(() => {
+    if (signIn && !session.isPending) router.replace("/sign-in?next=" + encodeURIComponent(returnTo))
+  }, [returnTo, router, session.isPending, signIn])
 
-  if (session.isPending || (user && profile.isPending && !session.error)) return <div className="vendor-gateway"><LoadingState /></div>
+  if (session.isPending || signIn || (user && profile.isPending && !session.error)) return <div className="vendor-gateway"><LoadingState /></div>
   if (session.error) {
     const status = session.error.status
     const error = status === 401 || status === 403 ? new VendorApiError(status, status === 401 ? "Sign in to access the vendor workspace." : "This account cannot access the vendor workspace.") : null
@@ -81,27 +89,32 @@ function VendorGate({ children }: { children: ReactNode }) {
   if (!user) return <div className="vendor-gateway"><WorkspaceState title="Sign in to your workspace" text="Use your WedPlan vendor account to manage services."><ActionLink href="/sign-in">Sign in</ActionLink></WorkspaceState></div>
   if (!profile.data || profile.error) return <div className="vendor-gateway"><RequestError error={profile.error} retry={() => void profile.refetch()} /></div>
 
-  const plan = vendorPlan(user)
-  return <WorkspaceContext.Provider value={{ profile: profile.data, plan }}>
+  return <WorkspaceContext.Provider value={{ profile: profile.data, plan: vendorPlan(user) }}>{children}</WorkspaceContext.Provider>
+}
+
+function VendorShell({ children }: { children: ReactNode }) {
+  const { profile, plan } = useVendor()
+  const pathname = usePathname()
+  return (
     <div className="vendor-layout">
       <a className="wp-skip" href="#vendor-main">Skip to content</a>
       <aside className="vendor-sidebar">
         <Link className="wp-brand" href="/"><UiIcon icon={HeartHandshake} size="xl" /> WedPlan<span>.</span></Link>
-        <div className="vendor-identity"><span className="vendor-avatar" aria-hidden="true">{profile.data.name.trim().charAt(0).toUpperCase()}</span><div><strong>{profile.data.name}</strong><p>Vendor account</p></div></div>
+        <div className="vendor-identity"><span className="vendor-avatar" aria-hidden="true">{profile.name.trim().charAt(0).toUpperCase()}</span><div><strong>{profile.name}</strong><p>Vendor account</p></div></div>
         <nav aria-label="Vendor navigation">
           {navigation.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href === "/vendor/services" && pathname.endsWith("/edit"))
             return <Link key={href} href={href} aria-current={active ? "page" : undefined}><UiIcon icon={Icon} size="sm" />{label}</Link>
           })}
-          {[[Crown,"Subscription"],[User,"Profile Settings"]].map(([Icon, label]) => { const ItemIcon = Icon as typeof CalendarDays; return <span className="vendor-nav-disabled" key={String(label)} aria-disabled="true"><UiIcon icon={ItemIcon} size="sm" />{String(label)}</span> })}
+          <span className="vendor-nav-disabled" aria-disabled="true"><UiIcon icon={User} size="sm" />Profile Settings</span>
         </nav>
         <div className="vendor-sidebar-plan"><UiIcon icon={Crown} size="xl" /><strong>{plan === "Premium" ? "Premium Plan" : plan === "Free" ? "Free Plan" : "Subscription"}</strong><p>{plan === "Premium" ? "Unlimited active service listings." : plan === "Free" ? "Publish up to three active services." : "Plan information unavailable."}</p></div>
         <Link href="/services" className="vendor-public-link">Public directory</Link>
       </aside>
       <div className="vendor-content">
         <header className="vendor-topbar">
-          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === "/vendor/bookings" ? "Booking Requests" : pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : "My Services"}</strong></>}</div>
-          <span>{profile.data.name}</span>
+          <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : navigation.find((item) => item.href === pathname)?.label}</strong></>}</div>
+          <span>{profile.name}</span>
           <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
           <ThemeSelect />
           <details className="vendor-mobile-links">
@@ -115,12 +128,16 @@ function VendorGate({ children }: { children: ReactNode }) {
         <main id="vendor-main" className="vendor-main">{children}</main>
       </div>
     </div>
-  </WorkspaceContext.Provider>
+  )
+}
+
+export function VendorAccess({ children }: { children: ReactNode }) {
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } }))
+  return <QueryClientProvider client={client}><VendorGate>{children}</VendorGate></QueryClientProvider>
 }
 
 export function VendorWorkspace({ children }: { children: ReactNode }) {
-  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 0 } } }))
   return <div className="wp-site vendor-site">
-    <QueryClientProvider client={client}><VendorGate>{children}</VendorGate></QueryClientProvider>
+    <VendorAccess><VendorShell>{children}</VendorShell></VendorAccess>
   </div>
 }

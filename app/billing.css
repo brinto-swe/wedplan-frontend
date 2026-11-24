@@ -1,0 +1,42 @@
+.billing-layout { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 14px; }
+.billing-layout > .billing-plan, .billing-status { align-self: stretch; }
+.billing-card-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 15px; }
+.wp-site .billing-card-heading h2 { margin-bottom: 4px; }
+.billing-plan ul { border-top: 1px solid var(--wp-line); padding-top: 12px; margin-block: 16px; display: grid; gap: 8px; }
+.billing-plan li { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+.billing-plan li svg, .billing-layout h2 > svg, .billing-result-card h2 > svg { color: var(--wp-link); flex: none; }
+.billing-premium { background: var(--wp-secondary); border-color: var(--wp-link); }
+.billing-layout h2, .billing-result-card h2 { display: flex; align-items: center; gap: 9px; }
+.billing-current { display: flex; flex-direction: column; gap: 3px; background: var(--wp-secondary); border-radius: 10px; padding: 12px 14px; margin-block: 12px; }
+.billing-current.vendor-active { background: var(--success-surface); color: var(--success-foreground); }
+.billing-details > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid var(--wp-line); font-size: .9rem; }
+.billing-details dt { color: var(--wp-muted); }
+.billing-details dd { text-align: end; font-weight: 600; }
+.billing-actions { margin-top: 16px; }
+.billing-comparison { grid-column: span 2; }
+.billing-table { min-width: 0; }
+.billing-history .billing-table { min-width: 365px; }
+.billing-history .vendor-state { box-shadow: none; margin-top: 10px; }
+.billing-history .vendor-pagination .wp-button { padding-inline: 10px; }
+.billing-failed { color: var(--destructive); background: var(--error-surface); }
+.billing-inline { display: block; border-radius: 6px; padding: 8px 10px; margin-block: 10px; font-size: .88rem; }
+.billing-result { width: min(100%, 94rem); min-height: 35rem; margin-inline: auto; padding: clamp(32px,6vw,70px) 16px clamp(115px,16vw,190px); text-align: center; background: linear-gradient(180deg, var(--wp-paper) 68%, transparent 100%), url('/weddings/hero.webp') center 68% / cover no-repeat; }
+.billing-result > * { margin-inline: auto; }
+.wp-site .billing-result h1 { font-size: clamp(2.35rem,6vw,4.4rem); }
+.billing-result-icon { width: 78px; height: 78px; display: grid; place-items: center; border-radius: 50%; background: var(--wp-accent); color: var(--wp-link); margin-bottom: 20px; }
+.billing-result-icon svg { width: 48px; height: 48px; }
+.billing-result-icon.vendor-active { background: var(--success-surface); color: var(--success-foreground); }
+.billing-result-icon.billing-failed { background: var(--error-surface); color: var(--destructive); }
+.billing-result-intro { max-width: 48ch; margin-block: 14px 24px; color: var(--wp-muted); }
+.billing-result-card, .billing-result > [role="alert"], .billing-result .vendor-loading { max-width: min(100%, 35rem); }
+.billing-result-card { text-align: start; }
+.billing-result-card p + p { margin-top: 6px; }
+.billing-result .billing-actions { justify-content: center; }
+@media (max-width: 1220px) {
+  .billing-layout { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .billing-status { grid-column: 1 / -1; }
+  .billing-comparison { grid-column: auto; }
+}
+@media (max-width: 630px) {
+  .billing-layout { grid-template-columns: minmax(0,1fr); }
+}

@@ -41,7 +41,7 @@ export function Dashboard() {
         <p className="vendor-muted">{plan === "Premium" ? "Unlimited active services."
           : plan === "Free" ? services.data ? `${active} of ${activeLimit} active services in use.` : `Up to ${activeLimit} active services.`
             : "The current subscription is unavailable."}</p>
-        <ActionLink href="/vendor/services" secondary>Manage my services</ActionLink>
+        <ActionLink href="/vendor/subscription" secondary>Manage subscription</ActionLink>
       </section>
       <section className="vendor-card"><h2>Recent Booking Requests</h2>{bookings.isSuccess && (requests.length ? <ul className="vendor-activity">{requests.slice(0, 3).map((item) => <li key={item.id}><div><strong>{item.customerContact.name}</strong><p>{eventDay(item.eventDate)} · {item.eventLocation}</p></div><BookingBadge status={item.status} /></li>)}</ul> : <p className="vendor-muted">No booking requests yet.</p>)}<Link className="wp-text-link" href="/vendor/bookings">View booking requests</Link><div className="vendor-actions"><ActionLink href="/vendor/services/new">Add service</ActionLink><ActionLink href="/vendor/services" secondary>My Services</ActionLink></div></section>
       <section className="vendor-card">
