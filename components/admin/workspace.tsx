@@ -11,14 +11,14 @@ import { UiIcon } from "@/components/ui/icon"
 import { ThemeSelect } from "@/components/ui/theme-select"
 import { authClient } from "@/lib/auth"
 import { AdminApiError, getAdminProfile } from "@/lib/admin"
-import { adminDashboardPath, adminReturn, adminUsersPath } from "@/lib/admin-navigation"
+import { adminDashboardPath, adminReturn, adminServicesPath, adminUsersPath } from "@/lib/admin-navigation"
 import { WorkspaceState } from "@/components/vendor/workspace"
 
 const signInFor = (pathname: string) => "/sign-in?next=" + encodeURIComponent(adminReturn(pathname) ?? adminDashboardPath)
 const sections = [
   { label: "Dashboard", href: adminDashboardPath, icon: House },
   { label: "Users", href: adminUsersPath, icon: Users },
-  { label: "Services", href: adminDashboardPath + "#admin-platform", icon: Layers3 },
+  { label: "Services", href: adminServicesPath, icon: Layers3 },
   { label: "Bookings", href: adminDashboardPath + "#admin-bookings", icon: CalendarDays },
   { label: "Subscriptions", href: adminDashboardPath + "#admin-platform", icon: Crown },
   { label: "Transactions", href: adminDashboardPath + "#admin-revenue", icon: ReceiptText },
@@ -80,7 +80,7 @@ function Gate({ children }: { children: ReactNode }) {
     </aside>
     <div className="vendor-content">
       <header className="vendor-topbar">
-        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === adminUsersPath ? "Users Management" : "Overview"}</strong></div>
+        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === adminUsersPath ? "Users Management" : pathname === adminServicesPath ? "Manage Services" : "Overview"}</strong></div>
         <span className="admin-topbar-name">{name}</span><ThemeSelect />
         <details className="vendor-mobile-links">
           <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>

@@ -81,3 +81,25 @@
   .admin-users-grid.admin-users-split { grid-template-columns:minmax(0,1fr); }
   .admin-user-detail { grid-row:1; }
 }
+
+.admin-services { grid-template-columns:minmax(0,1fr); }
+.admin-services .vendor-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.admin-services .vendor-search input { min-width:0; }
+.admin-services .vendor-table { min-width:695px; }
+.admin-services .vendor-table-wrap { position:relative; max-width:100%; }
+.admin-services .vendor-table th[scope="row"] { font-weight:650; }
+.admin-service-description { white-space:pre-wrap; overflow-wrap:anywhere; }
+.admin-service-form fieldset { display:grid; gap:8px; min-width:0; margin-block:10px 15px; }
+.admin-service-form label { display:grid; gap:4px; font-size:.9rem; }
+.admin-service-form :is(input,textarea) { padding:7px; border:1px solid var(--wp-line); background:var(--wp-paper); border-radius:6px; width:100%; }
+.admin-service-form textarea { min-height:80px; resize:vertical; }
+.admin-services .vendor-confirm[open] { max-height:calc(100dvh - 32px); overflow:auto; }
+@media (max-width:820px) {
+  .vendor-layout.admin-layout { grid-template-columns:minmax(0,1fr); }
+  .admin-layout .vendor-content { min-width:0; }
+}
+@media (max-width:600px) {
+  .admin-services .vendor-stats { grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); }
+  .admin-services .admin-users-toolbar { display:grid; grid-template-columns:minmax(0,1fr); }
+  .admin-services .admin-users-toolbar button { justify-self:start; }
+}

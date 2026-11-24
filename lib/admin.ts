@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
+import { serviceInput, type ServiceInput } from "@/lib/vendor-services"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const count = z.number().int().nonnegative()
@@ -27,9 +28,10 @@ const adminUser = z.object({
   createdAt: z.iso.datetime().optional(), updatedAt: z.iso.datetime().optional(),
 })
 const userDetail = z.object({ data: adminUser })
+const adminPagination = z.object({ page: count.positive(), limit: count.positive(), total: count, totalPages: count })
 const userList = z.object({
   data: z.array(adminUser),
-  pagination: z.object({ page: count.positive(), limit: count.positive(), total: count, totalPages: count }),
+  pagination: adminPagination,
 })
 export type AdminUser = z.infer<typeof adminUser>
 export type AdminUserFilters = { q: string; role: AdminUser["role"] | ""; status: AdminUser["status"] | ""; page: number }
@@ -38,11 +40,11 @@ export class AdminApiError extends Error {
   constructor(readonly status: number) { super("Admin API request failed") }
 }
 
-async function adminRequest(path: string, signal?: AbortSignal, body?: { status: AdminUser["status"] }) {
+async function adminRequest(path: string, signal?: AbortSignal, body?: object, method = body ? "PATCH" : "GET") {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
   if (!data?.token) throw new AdminApiError(error?.status ?? 401)
   const response = await fetch(new URL(path, origin), {
-    method: body ? "PATCH" : "GET",
+    method,
     body: body ? JSON.stringify(body) : undefined,
     credentials: "omit",
     cache: "no-store",
@@ -50,7 +52,7 @@ async function adminRequest(path: string, signal?: AbortSignal, body?: { status:
     signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
   })
   if (!response.ok) throw new AdminApiError(response.status)
-  return response.json()
+  return response.status === 204 ? undefined : response.json()
 }
 
 export async function getAdminProfile(signal: AbortSignal) {
@@ -77,4 +79,39 @@ export async function getAdminUser(id: string, signal: AbortSignal) {
 
 export async function updateAdminUserStatus(id: string, status: AdminUser["status"]) {
   return userDetail.parse(await adminRequest("/api/admin/users/" + encodeURIComponent(id) + "/status", undefined, { status })).data
+}
+
+const adminService = serviceInput.extend({
+  id: z.string().regex(/^[a-f0-9]{24}$/i), vendorId: z.string(),
+  createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
+})
+const vendorDisplay = z.object({ id: z.string(), name: z.string().optional(), businessName: z.string().optional() })
+const adminServiceDetail = z.object({ data: adminService })
+const adminServiceList = z.object({
+  data: z.array(adminService.extend({ vendor: vendorDisplay.nullable() })),
+  pagination: adminPagination,
+})
+export type AdminService = z.infer<typeof adminService>
+export type AdminServiceRow = z.infer<typeof adminServiceList>["data"][number]
+export type AdminServiceFilters = { q: string; category: string; vendorId: string; visibility: "" | "active" | "inactive"; page: number }
+
+export async function listAdminServices(filters: AdminServiceFilters, signal: AbortSignal) {
+  const { page, ...values } = filters
+  const params = new URLSearchParams({ page: String(page), limit: "8" })
+  for (const [name, value] of Object.entries(values)) if (value.trim()) params.set(name, value.trim())
+  return adminServiceList.parse(await adminRequest("/api/admin/services?" + params, signal))
+}
+
+const adminServicePath = (id: string) => "/api/admin/services/" + encodeURIComponent(id)
+
+export async function getAdminService(id: string, signal: AbortSignal) {
+  return adminServiceDetail.parse(await adminRequest(adminServicePath(id), signal)).data
+}
+
+export async function updateAdminService(id: string, patch: Partial<ServiceInput>) {
+  return adminServiceDetail.parse(await adminRequest(adminServicePath(id), undefined, patch)).data
+}
+
+export async function deleteAdminService(id: string) {
+  await adminRequest(adminServicePath(id), undefined, undefined, "DELETE")
 }
