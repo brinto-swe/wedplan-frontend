@@ -1,13 +1,6 @@
 [build]
-  command = "npm run build"
+  command = "npm run build:netlify"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "24"
-
-# Keep the existing API paths and session cookies on the frontend origin.
-[[redirects]]
-  from = "/api/*"
-  to = "https://wedplan-backend-six.vercel.app/api/:splat"
-  status = 200
-  force = true

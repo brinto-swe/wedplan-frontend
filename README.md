@@ -5,19 +5,31 @@ WedPlan is a Next.js App Router application. The production API runs at
 
 ## Deploy to Netlify
 
-1. Import the `wedplan-frontend` repository. Use the repository root as the base directory and leave the package directory unset. Keep Netlify’s automatic Next.js/OpenNext adapter enabled. The version-controlled `netlify.toml` sets Node.js 24, `npm run build`, and the `.next` publish directory. Deploy with the adapter, since the catalogue and detail pages require server rendering.
-2. Reserve the canonical HTTPS Netlify hostname, for example `https://your-site.netlify.app`. In Netlify’s production environment, set **`NEXT_PUBLIC_API_URL` to that exact origin**, without `/api`. Scope it to Builds (or all scopes) and redeploy whenever it changes. The same-origin `/api/*` rewrite forwards requests to the production Vercel API. No additional application environment variables are required on Netlify. Keep MongoDB, Better Auth, and OAuth credentials on Vercel.
-3. In the Vercel backend’s production environment, set both **`CLIENT_URL` and `BETTER_AUTH_URL`** to the exact canonical Netlify origin. Preserve existing secret values. Redeploy the backend to apply the origin settings. Register the frontend-facing callbacks in the Google and GitHub provider consoles:
+Use the repository root as the base directory and leave the package directory unset. Keep Netlify’s automatic Next.js/OpenNext adapter enabled. The checked-in configuration uses Node.js 24, `npm run build:netlify`, and the `.next` publish directory.
 
-   - `https://your-site.netlify.app/api/auth/callback/google`
-   - `https://your-site.netlify.app/api/auth/callback/github`
+### Netlify environment variables
 
-   Use the hostname visitors will actually use. The callback paths are proxied to Express. Preview aliases require separate environment and provider configuration if they need authenticated access.
-4. Deploy the frontend manually from the Netlify dashboard. Verify `/api/auth/ok` and `/api/services` through the Netlify hostname, and check that anonymous `/api/bookings/my` returns 401. Check the live catalogue, a service detail page, and a wedding image. Test email and both OAuth sign-ins, reload, JWT-backed dashboard access, and sign-out in Chrome and Safari. In browser tools, confirm the auth cookie is set on the Netlify hostname and that session responses are not cached.
+In **Project configuration → Environment variables**, scope these values to **Builds** and choose different values for each deploy context.
 
-### Direct API alternative
+| Variable | Production | Deploy Previews |
+| --- | --- | --- |
+| `WEDPLAN_API_PROXY_TARGET` | `https://wedplan-backend-six.vercel.app` | `https://wedplan-backend-git-preview-st-2e7864-brintos-projects-17ed2514.vercel.app` |
+| `NEXT_PUBLIC_API_URL` | Exact canonical HTTPS Netlify site origin, without `/api` | Derived by the build from Netlify’s `DEPLOY_PRIME_URL`. No manual value required. |
 
-`NEXT_PUBLIC_API_URL=https://wedplan-backend-six.vercel.app` is also supported. For reliable browser sessions, use HTTPS sibling custom domains for frontend and backend and use the Vercel API’s custom origin instead of the default URL. Set the backend’s `CLIENT_URL` to the frontend origin and its `BETTER_AUTH_URL` to the API origin. Register OAuth callbacks on that API origin. Better Auth sends cookies with `credentials: "include"`; the protected application requests send bearer tokens. Default Netlify and Vercel hostnames are cross-site, so direct API sign-in on that pair can fail when browsers block third-party cookies.
+Each successful build writes one forced `200` proxy rule to `public/_redirects`. OpenNext copies the file to the final publish directory. The rule forwards `/api/*` with its path and query intact. Both clients use the frontend origin, so Better Auth can set its session cookie on the Netlify hostname and Admin requests can carry their bearer header through the same proxy. Missing or unexpected backend targets fail the build. Branch deploys and other contexts require a separate routing decision before use. Remove any legacy `/api/*` proxy rules configured outside the repository before accepting a deployment.
+
+### Better Auth and OAuth
+
+On the matching Vercel backend, configure both `CLIENT_URL` and `BETTER_AUTH_URL` to the exact public frontend origin used by that deployment. For Production, use the canonical Netlify site origin. For Preview, use the specific `DEPLOY_PRIME_URL` of the Netlify Deploy Preview being tested. The isolated backend has one configured frontend origin, so coordinate which Deploy Preview uses it for authenticated testing.
+
+| Environment | Google callback | GitHub callback |
+| --- | --- | --- |
+| Production | `<production-frontend-origin>/api/auth/callback/google` | `<production-frontend-origin>/api/auth/callback/github` |
+| Preview | `<preview-frontend-origin>/api/auth/callback/google` | `<preview-frontend-origin>/api/auth/callback/github` |
+
+Register those complete callback URLs in the corresponding provider apps. Keep the Preview `BETTER_AUTH_SECRET` consistent with the secret that encrypted its stored JWT signing keys. The Preview backend must use the dedicated test MongoDB credential and `MONGODB_DATABASE=wedplan_stripe_test`. Keep production credentials and data out of Preview. MongoDB, Better Auth, and OAuth secrets belong on Vercel.
+
+Before authenticated Preview testing, confirm the selected Vercel deployment uses the isolated database and that its deployment protection permits Netlify’s proxy requests. After a manually approved deployment, test `/api/auth/ok` and a query-bearing `/api/services` through Netlify, then verify sign-in, reload, JWT-backed Admin reads, and sign-out on that hostname. Verify a disposable authenticated mutation through Preview to check request-body forwarding. Confirm the auth cookie belongs to the Netlify origin and session responses are uncached.
 
 Wedding images are local WebP files under `public/weddings`. Keep the existing `next/image` setup and the adapter’s Image CDN integration.
 
