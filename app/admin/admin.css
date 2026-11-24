@@ -46,3 +46,38 @@
   .admin-overview-grid { grid-template-columns: minmax(0,1fr); }
   .admin-topbar-name { display: none; }
 }
+
+.admin-users-grid { display:grid; gap:14px; align-items:start; grid-template-columns:minmax(0,1fr); }
+.admin-users-grid.admin-users-split { grid-template-columns:minmax(0,2.3fr) minmax(250px,1fr); }
+.admin-users-main { display:grid; gap:14px; min-width:0; }
+.admin-users-main .vendor-stats { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.admin-users-main .vendor-stat { min-height:80px; }
+.admin-user-presets { display:flex; flex-wrap:wrap; gap:5px; }
+.admin-user-presets button[aria-pressed="true"] { background:var(--sidebar-primary); color:var(--sidebar-primary-foreground); }
+.admin-users-toolbar { margin-bottom:0; }
+.admin-user-table { padding:0; overflow:hidden; }
+.admin-user-table .vendor-table { min-width:555px; }
+.admin-user-table .vendor-table :is(td,th) { padding-block:9px; }
+.admin-user-table .vendor-table th[scope="row"] { text-align:start; font-weight:400; }
+.admin-user-table tr[data-selected="true"] { background:var(--wp-secondary); }
+.admin-user-table .vendor-pagination { padding:0 12px 12px; }
+.admin-user-table .vendor-state { border:0; box-shadow:none; }
+.admin-user-identity { display:flex; align-items:center; gap:9px; min-width:0; }
+.admin-user-identity .vendor-avatar { width:40px; height:40px; }
+.admin-user-identity p { color:var(--wp-muted); font-size:.8rem; overflow-wrap:anywhere; }
+.admin-user-actions { display:flex; flex-wrap:wrap; gap:5px; }
+.admin-user-action.wp-button { min-height:34px; padding:5px 8px; font-size:.8rem; }
+.admin-user-status::before { content:""; width:6px; height:6px; margin-inline-end:5px; border-radius:50%; background:currentColor; }
+.admin-user-blocked { background:var(--error-surface); color:var(--destructive); }
+.admin-user-detail { display:grid; gap:14px; }
+.admin-user-detail > .wp-button { justify-self:start; }
+.admin-user-mutation-error { color:var(--destructive) !important; }
+.admin-user-loading > div { display:grid; gap:6px; }
+.admin-user-loading .admin-gate-skeleton { min-height:40px; }
+@media (max-width:1170px) {
+  .admin-users-main .vendor-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:970px) {
+  .admin-users-grid.admin-users-split { grid-template-columns:minmax(0,1fr); }
+  .admin-user-detail { grid-row:1; }
+}

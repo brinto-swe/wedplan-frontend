@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
 import { CalendarDays, ChevronDown, ChevronRight, Crown, HeartHandshake, House, Layers3, ReceiptText, Users } from "lucide-react"
 import { useEffect, useState, type ReactNode } from "react"
@@ -11,25 +11,26 @@ import { UiIcon } from "@/components/ui/icon"
 import { ThemeSelect } from "@/components/ui/theme-select"
 import { authClient } from "@/lib/auth"
 import { AdminApiError, getAdminProfile } from "@/lib/admin"
-import { adminDashboardPath } from "@/lib/admin-navigation"
+import { adminDashboardPath, adminReturn, adminUsersPath } from "@/lib/admin-navigation"
 import { WorkspaceState } from "@/components/vendor/workspace"
 
-const signIn = "/sign-in?next=" + encodeURIComponent(adminDashboardPath)
+const signInFor = (pathname: string) => "/sign-in?next=" + encodeURIComponent(adminReturn(pathname) ?? adminDashboardPath)
 const sections = [
   { label: "Dashboard", href: adminDashboardPath, icon: House },
-  { label: "Users", href: "#admin-users", icon: Users },
-  { label: "Services", href: "#admin-platform", icon: Layers3 },
-  { label: "Bookings", href: "#admin-bookings", icon: CalendarDays },
-  { label: "Subscriptions", href: "#admin-platform", icon: Crown },
-  { label: "Transactions", href: "#admin-revenue", icon: ReceiptText },
+  { label: "Users", href: adminUsersPath, icon: Users },
+  { label: "Services", href: adminDashboardPath + "#admin-platform", icon: Layers3 },
+  { label: "Bookings", href: adminDashboardPath + "#admin-bookings", icon: CalendarDays },
+  { label: "Subscriptions", href: adminDashboardPath + "#admin-platform", icon: Crown },
+  { label: "Transactions", href: adminDashboardPath + "#admin-revenue", icon: ReceiptText },
 ]
 
-export function AdminRequestError({ error, retry }: { error: unknown; retry: () => void }) {
+export function AdminRequestError({ error, retry, title = "Unable to load the dashboard" }: { error: unknown; retry: () => void; title?: string }) {
+  const pathname = usePathname()
   const status = error instanceof AdminApiError ? error.status : 0
   return <div role="alert"><WorkspaceState
-    title={status === 403 ? "Admin access required" : status === 401 ? "Sign in required" : "Unable to load the dashboard"}
+    title={status === 403 ? "Admin access required" : status === 401 ? "Sign in required" : status === 404 ? "Record not found" : title}
     text={status === 403 ? "This workspace is available to authorized Administrators." : status === 401 ? "Sign in to access this workspace." : "Check your connection and try again."}>
-    {status === 401 ? <Link href={signIn} className="wp-button">Sign in</Link>
+    {status === 401 ? <Link href={signInFor(pathname)} className="wp-button">Sign in</Link>
       : status !== 403 && <button type="button" className="wp-button wp-button-outline" onClick={retry}>Try again</button>}
   </WorkspaceState></div>
 }
@@ -38,6 +39,7 @@ function Gate({ children }: { children: ReactNode }) {
   const session = authClient.useSession()
   const user = session.data?.user
   const router = useRouter()
+  const pathname = usePathname()
   const profile = useQuery({
     queryKey: ["admin-profile", user?.id],
     enabled: Boolean(user && !session.error),
@@ -45,7 +47,7 @@ function Gate({ children }: { children: ReactNode }) {
   })
 
   const redirect = !session.isPending && !user && (!session.error || session.error.status === 401)
-  useEffect(() => { if (redirect) router.replace(signIn) }, [redirect, router])
+  useEffect(() => { if (redirect) router.replace(signInFor(pathname)) }, [pathname, redirect, router])
 
   if (session.isPending || redirect || (user && profile.isPending && !session.error)) {
     return <main className="vendor-gateway">
@@ -59,7 +61,7 @@ function Gate({ children }: { children: ReactNode }) {
   }
 
   const { name } = profile.data
-  const nav = sections.map(({ label, href, icon }) => <Link key={label} href={href} aria-current={href === adminDashboardPath ? "page" : undefined}>
+  const nav = sections.map(({ label, href, icon }) => <Link key={label} href={href} aria-current={href === pathname ? "page" : undefined}>
     <UiIcon icon={icon} size="sm" />{label}
   </Link>)
   return <div className="vendor-layout admin-layout">
@@ -78,7 +80,7 @@ function Gate({ children }: { children: ReactNode }) {
     </aside>
     <div className="vendor-content">
       <header className="vendor-topbar">
-        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>Overview</strong></div>
+        <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname === adminUsersPath ? "Users Management" : "Overview"}</strong></div>
         <span className="admin-topbar-name">{name}</span><ThemeSelect />
         <details className="vendor-mobile-links">
           <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>

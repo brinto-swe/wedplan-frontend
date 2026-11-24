@@ -19,19 +19,35 @@ const overviewSchema = z.object({ data: z.object({
   }),
 }) })
 export type AdminOverview = z.infer<typeof overviewSchema>["data"]
+export const adminUserRoles = ["customer", "vendor", "admin"] as const
+export const adminUserStatuses = ["active", "blocked"] as const
+const adminUser = z.object({
+  id: z.string().regex(/^[a-f0-9]{24}$/i), name: z.string(), email: z.string(),
+  role: z.enum(adminUserRoles), status: z.enum(adminUserStatuses), emailVerified: z.boolean(),
+  createdAt: z.iso.datetime().optional(), updatedAt: z.iso.datetime().optional(),
+})
+const userDetail = z.object({ data: adminUser })
+const userList = z.object({
+  data: z.array(adminUser),
+  pagination: z.object({ page: count.positive(), limit: count.positive(), total: count, totalPages: count }),
+})
+export type AdminUser = z.infer<typeof adminUser>
+export type AdminUserFilters = { q: string; role: AdminUser["role"] | ""; status: AdminUser["status"] | ""; page: number }
 
 export class AdminApiError extends Error {
   constructor(readonly status: number) { super("Admin API request failed") }
 }
 
-async function adminRequest(path: "/api/me" | "/api/admin/overview", signal: AbortSignal) {
+async function adminRequest(path: string, signal?: AbortSignal, body?: { status: AdminUser["status"] }) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
   if (!data?.token) throw new AdminApiError(error?.status ?? 401)
   const response = await fetch(new URL(path, origin), {
+    method: body ? "PATCH" : "GET",
+    body: body ? JSON.stringify(body) : undefined,
     credentials: "omit",
     cache: "no-store",
-    headers: { Authorization: "Bearer " + data.token },
-    signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+    headers: { Authorization: "Bearer " + data.token, ...(body && { "Content-Type": "application/json" }) },
+    signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
   })
   if (!response.ok) throw new AdminApiError(response.status)
   return response.json()
@@ -45,4 +61,20 @@ export async function getAdminProfile(signal: AbortSignal) {
 
 export async function getAdminOverview(signal: AbortSignal) {
   return overviewSchema.parse(await adminRequest("/api/admin/overview", signal)).data
+}
+
+export async function listAdminUsers(filters: AdminUserFilters, signal: AbortSignal) {
+  const params = new URLSearchParams({ page: String(filters.page), limit: "8" })
+  for (const [field, value] of Object.entries({ q: filters.q.trim(), role: filters.role, status: filters.status })) {
+    if (value) params.set(field, value)
+  }
+  return userList.parse(await adminRequest("/api/admin/users?" + params, signal))
+}
+
+export async function getAdminUser(id: string, signal: AbortSignal) {
+  return userDetail.parse(await adminRequest("/api/admin/users/" + encodeURIComponent(id), signal)).data
+}
+
+export async function updateAdminUserStatus(id: string, status: AdminUser["status"]) {
+  return userDetail.parse(await adminRequest("/api/admin/users/" + encodeURIComponent(id) + "/status", undefined, { status })).data
 }
