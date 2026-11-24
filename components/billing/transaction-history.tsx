@@ -7,17 +7,9 @@ import { ReceiptText } from "lucide-react"
 import { UiIcon } from "@/components/ui/icon"
 import { LoadingState, useVendor, WorkspaceState } from "@/components/vendor/workspace"
 import { getTransactions } from "@/lib/billing"
+import { formatStripeAmount } from "@/lib/stripe-amount"
 
 import { BillingDate, BillingError } from "./shared"
-
-// Stripe reports amounts in minor units. ISK and UGX have a two-decimal API
-// representation even though their amounts are displayed as whole units.
-function formatAmount(amount: number, currency: string) {
-  const code = currency.toUpperCase()
-  const digits = new Intl.NumberFormat(undefined, { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits ?? 2
-  const scale = code === "ISK" || code === "UGX" ? 2 : digits
-  return new Intl.NumberFormat(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount / 10 ** scale)
-}
 
 export function TransactionHistory() {
   const { profile } = useVendor()
@@ -38,7 +30,7 @@ export function TransactionHistory() {
               <thead><tr><th scope="col">Date</th><th scope="col">Amount</th><th scope="col">Currency</th><th scope="col">Status</th><th scope="col">Type</th></tr></thead>
               <tbody>{history.data.data.map((item) => <tr key={item.id}>
                 <td><BillingDate value={item.createdAt} /></td>
-                <td>{formatAmount(item.amount, item.currency)}</td>
+                <td>{formatStripeAmount(item.amount, item.currency)}</td>
                 <td>{item.currency.toUpperCase()}</td>
                 <td><span className={`vendor-badge ${item.status === "paid" ? "vendor-active" : "billing-failed"}`}>{item.status === "paid" ? "Paid" : "Failed"}</span></td>
                 <td>Subscription</td>

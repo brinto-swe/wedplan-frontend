@@ -1,0 +1,48 @@
+.admin-layout {
+  --admin-accepted: var(--success-foreground);
+  --admin-pending: var(--chart-3);
+  --admin-rejected: var(--destructive);
+  --admin-cancelled: var(--muted-foreground);
+}
+.admin-layout .vendor-main { max-width: none; }
+.admin-layout .admin-aside-card { min-height: 200px; background: linear-gradient(to bottom, var(--sidebar-accent) 20%, transparent), url('/weddings/florals.webp') center bottom / cover; }
+.admin-aside-card strong, .admin-aside-card p { background: var(--sidebar-accent); }
+.admin-aside-card strong { font-family: var(--wp-heading); font-size: 1.6rem; }
+.admin-dashboard .vendor-banner h1 { overflow-wrap: anywhere; }
+.admin-dashboard .vendor-stat { min-height: 100px; }
+.admin-dashboard .vendor-stats { grid-template-columns: repeat(5, minmax(0,1fr)); }
+.admin-overview-grid { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(0,1fr) minmax(0,1fr); gap: 14px; }
+.admin-overview-grid .admin-panel { min-height: 225px; }
+.wp-site .admin-panel h2 { display: flex; align-items: center; gap: 8px; font-size: clamp(1.46rem,2vw,1.85rem); }
+.admin-panel h2 svg { color: var(--wp-link); flex: none; }
+.admin-metrics { font-size: .9rem; }
+.admin-metrics > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 9px 0; border-top: 1px solid var(--wp-line); }
+.admin-metrics dd { font-weight: 650; text-align: end; overflow-wrap: anywhere; }
+.admin-panel-empty { margin-block: 16px; color: var(--wp-muted); font-size: .9rem; }
+.admin-bars { display: grid; gap: 15px; padding-block: 19px 6px; }
+.admin-bars > div { display: grid; grid-template-columns: 5.5rem minmax(0,1fr) auto; gap: 9px; align-items: center; font-size: .85rem; }
+.admin-bar-track { background: var(--wp-secondary); border-radius: 999px; height: 9px; overflow: hidden; }
+.admin-bar-track span { display: block; height: 100%; border-radius: inherit; }
+.admin-booking-chart { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; padding-block: 9px; }
+.admin-donut { display: grid; place-items: center; flex: none; width: 102px; aspect-ratio: 1; border-radius: 50%; }
+.admin-donut > span { width: 73%; aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; text-align: center; background: var(--wp-surface); font-size: .74rem; }
+.admin-donut strong { line-height: 1.1; font-size: 1.06rem; }
+.admin-booking-chart ul { flex: 1 1 120px; display: grid; gap: 9px; font-size: .81rem; }
+.admin-booking-chart li, .admin-booking-chart li > span { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.admin-booking-chart li i { width: 8px; height: 8px; flex: none; border-radius: 50%; }
+.admin-quick-actions { display: grid; gap: 7px; }
+.admin-quick-actions a { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--wp-line); border-radius: 7px; font-size: .86rem; }
+.admin-quick-actions a:hover { background: var(--wp-secondary); }
+.admin-quick-actions svg { color: var(--wp-link); }
+.admin-overview-loading { display: grid; gap: 14px; }
+.admin-overview-loading .admin-skeleton, .admin-gate-skeleton { min-height: 100px; background: var(--wp-secondary); }
+.admin-overview-loading .admin-overview-grid .admin-skeleton { min-height: 220px; }
+.admin-gate-skeleton { border-radius: 12px; margin-block-start: 10px; }
+@media (max-width: 1290px) {
+  .admin-dashboard .vendor-stats { grid-template-columns: repeat(auto-fit,minmax(128px,1fr)); }
+  .admin-overview-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 600px) {
+  .admin-overview-grid { grid-template-columns: minmax(0,1fr); }
+  .admin-topbar-name { display: none; }
+}

@@ -1,5 +1,6 @@
 import { bookingReturn } from "@/lib/booking-navigation"
 import { billingReturn } from "@/lib/billing-navigation"
+import { adminReturn } from "@/lib/admin-navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { AuthForm, type AuthMode } from "./auth-form"
@@ -7,7 +8,7 @@ import { AuthForm, type AuthMode } from "./auth-form"
 export type AuthQuery = Record<string, string | string[] | undefined>
 
 export function AuthScreen({ mode, query }: { mode: AuthMode; query: AuthQuery }) {
-  const destination = bookingReturn(query.next) ?? billingReturn(query.next)
+  const destination = bookingReturn(query.next) ?? billingReturn(query.next) ?? adminReturn(query.next)
   const signup = mode === "sign-up"
 
   return (
