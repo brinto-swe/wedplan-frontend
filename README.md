@@ -31,6 +31,16 @@ Register those complete callback URLs in the corresponding provider apps. Keep t
 
 Before authenticated Preview testing, confirm the selected Vercel deployment uses the isolated database and that its deployment protection permits Netlify’s proxy requests. After a manually approved deployment, test `/api/auth/ok` and a query-bearing `/api/services` through Netlify, then verify sign-in, reload, JWT-backed Admin reads, and sign-out on that hostname. Verify a disposable authenticated mutation through Preview to check request-body forwarding. Confirm the auth cookie belongs to the Netlify origin and session responses are uncached.
 
+### Hosted Preview Smoke Test Checklist
+
+- [ ] Verify the Preview frontend’s same-origin `/api/*` proxy targets the isolated Vercel Preview backend.
+- [ ] Confirm that backend connects to `wedplan_stripe_test` with the dedicated test credential before signing in or performing mutations.
+- [ ] Sign in as the disposable Admin and verify the session persists after a reload.
+- [ ] Open Dashboard, Users, Services, and Transactions and confirm each page loads live test data.
+- [ ] Test block/unblock and service edit, visibility change, and deletion using only disposable test records. Clean up any records created for the smoke test.
+- [ ] Verify anonymous, Customer, Vendor, and blocked Admin requests are denied access to Admin pages and APIs as appropriate.
+- [ ] Confirm the smoke test left Production data and accounts untouched.
+
 Wedding images are local WebP files under `public/weddings`. Keep the existing `next/image` setup and the adapter’s Image CDN integration.
 
 ## Local development
