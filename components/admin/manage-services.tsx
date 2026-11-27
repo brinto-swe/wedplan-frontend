@@ -5,21 +5,34 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CircleCheck, CircleMinus, Eye, Layers3, Pencil, Power, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
+import { ModerationBadge } from "@/components/ui/moderation-badge"
+import { ServicePhoto } from "@/components/public/service-photo"
+import { serviceImages } from "@/lib/services"
+import { moderationLabels, moderationStatus, type ModerationStatus } from "@/lib/service-publication"
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { UiIcon } from "@/components/ui/icon"
 import { VendorBanner, VendorStats } from "@/components/vendor/presentation"
 import { WorkspaceState } from "@/components/vendor/workspace"
-import { AdminApiError, deleteAdminService, getAdminOverview, getAdminService, listAdminServices, updateAdminService,
+import { AdminApiError, deleteAdminService, getAdminOverview, getAdminService, listAdminServices, moderateAdminService, updateAdminService,
   type AdminService, type AdminServiceFilters, type AdminServiceRow } from "@/lib/admin"
 import { authClient } from "@/lib/auth"
 import { serviceIdPattern, serviceInput, type ServiceInput } from "@/lib/vendor-services"
 import { AdminRequestError } from "./workspace"
 
-const defaults: AdminServiceFilters = { q: "", category: "", vendorId: "", visibility: "", page: 1 }
+const defaults: AdminServiceFilters = { q: "", category: "", vendorId: "", visibility: "", moderationStatus: "", page: 1 }
 const format = new Intl.NumberFormat()
 const price = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
 const date = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeZone: "UTC" })
-type Action = { service: AdminService; type: "delete" | "visibility" } | { service: AdminService; type: "edit"; patch: Partial<ServiceInput> }
+type Action = { service: AdminService } & (
+  { type: "delete" | "visibility" }
+  | { type: "edit"; patch: Partial<ServiceInput> }
+  | { type: "moderation"; status: Exclude<ModerationStatus, "pending"> }
+)
+
+function ServiceCover({ service, detail = false }: { service: AdminService; detail?: boolean }) {
+  const [cover] = serviceImages(service.category, service.images, service.title)
+  return <ServicePhoto src={cover.image} fallback={cover.fallback} alt="" width={detail ? 260 : 70} height={detail ? 154 : 43} />
+}
 
 function vendorName(vendor: AdminServiceRow["vendor"]) {
   if (!vendor) return "Vendor unavailable"
@@ -37,10 +50,10 @@ function ServiceSkeleton({ label }: { label: string }) {
   </div>
 }
 
-export function ManageServices() {
+export function ManageServices({ initialStatus }: { initialStatus: AdminServiceFilters["moderationStatus"] }) {
   const viewer = authClient.useSession().data?.user.id
   const client = useQueryClient()
-  const [filters, setFilters] = useState(defaults)
+  const [filters, setFilters] = useState({ ...defaults, moderationStatus: initialStatus })
   const [draft, setDraft] = useState({ q: "", category: "", vendorId: "" })
   const [filterError, setFilterError] = useState("")
   const [selected, setSelected] = useState<AdminServiceRow | null>(null)
@@ -60,20 +73,25 @@ export function ManageServices() {
   const operation = useMutation({
     mutationFn: async (change: Action) => {
       if (change.type === "delete") return deleteAdminService(change.service.id)
-      return updateAdminService(change.service.id, change.type === "edit" ? change.patch : { isActive: !change.service.isActive })
+      if (change.type === "moderation") return moderateAdminService(change.service.id, change.status)
+      return updateAdminService(change.service.id, change.type === "edit" ? change.patch : { isActive: !change.service.vendorAvailable })
     },
     onSuccess: async (updated, change) => {
       if (updated) {
         await client.cancelQueries({ queryKey: ["admin-service", viewer, updated.id] })
         client.setQueryData(["admin-service", viewer, updated.id], updated)
       }
-      if (change.type === "delete") {
-        if (selected?.id === change.service.id) setSelected(null)
-        if (services.data?.data.length === 1 && filters.page > 1) setFilters((current) => ({ ...current, page: current.page - 1 }))
+      if (change.type === "delete" && selected?.id === change.service.id) setSelected(null)
+      const leavesFilter = change.type === "delete" || (updated && (
+        (filters.moderationStatus && updated.moderationStatus !== filters.moderationStatus)
+        || (filters.visibility && updated.isActive !== (filters.visibility === "active"))
+      ))
+      if (leavesFilter && services.data?.data.length === 1 && filters.page > 1) {
+        setFilters((current) => ({ ...current, page: current.page - 1 }))
       }
       await Promise.all([client.invalidateQueries({ queryKey: listKey }), client.invalidateQueries({ queryKey: overviewKey })])
       dialog.current?.close()
-      toast.success(change.type === "delete" ? "Service deleted." : "Service updated.")
+      toast.success(change.type === "moderation" ? `Service ${change.status}.` : change.type === "delete" ? "Service deleted." : "Service updated.")
     },
     onSettled: () => { inFlight.current = false },
   })
@@ -94,7 +112,7 @@ export function ManageServices() {
       const parsed = serviceInput.safeParse({
         title: String(form.get("title") ?? ""), description: String(form.get("description") ?? ""),
         category: String(form.get("category") ?? ""), location: String(form.get("location") ?? ""),
-        price: amount ? Number(amount) : NaN, isActive: action.service.isActive,
+        price: amount ? Number(amount) : NaN,
       })
       if (!parsed.success) {
         setEditError(parsed.error.issues[0]?.message ?? "Check the service information.")
@@ -121,12 +139,18 @@ export function ManageServices() {
   }
 
   function actions(service: AdminService) {
-    const visibility = service.isActive ? "Deactivate" : "Activate"
+    const visibility = service.vendorAvailable ? "Pause availability for" : "Enable availability for"
     return <div className="admin-user-actions">
       <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
         aria-label={`Edit ${service.title}`} onClick={() => open({ service, type: "edit", patch: {} })}><UiIcon icon={Pencil} size="sm" /><span className="sr-only">Edit</span></button>
-      <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
-        aria-label={`${visibility} ${service.title}`} onClick={() => open({ service, type: "visibility" })}><UiIcon icon={Power} size="sm" /><span className="sr-only">{visibility}</span></button>
+      {service.moderationStatus === "pending" && <>
+        <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
+          aria-label={`Approve ${service.title}`} onClick={() => open({ service, type: "moderation", status: "approved" })}><UiIcon icon={CircleCheck} size="sm" /></button>
+        <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
+          aria-label={`Reject ${service.title}`} onClick={() => open({ service, type: "moderation", status: "rejected" })}><UiIcon icon={X} size="sm" /></button>
+      </>}
+      {service.moderationStatus === "approved" && <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
+        aria-label={`${visibility} ${service.title}`} onClick={() => open({ service, type: "visibility" })}><UiIcon icon={Power} size="sm" /><span className="sr-only">{visibility}</span></button>}
       <button type="button" className="wp-button wp-button-outline admin-user-action" disabled={operation.isPending}
         aria-label={`Delete ${service.title}`} onClick={() => open({ service, type: "delete" })}><UiIcon icon={Trash2} size="sm" /><span className="sr-only">Delete</span></button>
     </div>
@@ -135,10 +159,10 @@ export function ManageServices() {
   const stats = summary.data?.services
   const pagination = services.data?.pagination
   const rows = services.data?.data ?? []
-  const filtered = Boolean(filters.q.trim() || filters.category.trim() || filters.vendorId || filters.visibility)
+  const filtered = Boolean(filters.q.trim() || filters.category.trim() || filters.vendorId || filters.visibility || filters.moderationStatus)
   const errorStatus = operation.error instanceof AdminApiError ? operation.error.status : null
   const confirmation = action?.type === "delete" ? "Delete service" : action?.type === "edit" ? "Edit service"
-    : action?.service.isActive ? "Deactivate service" : "Activate service"
+    : action?.type === "moderation" ? (action.status === "approved" ? "Approve service" : "Reject service") : action?.service.vendorAvailable ? "Pause availability" : "Enable availability"
 
   return <div className="vendor-stack admin-users admin-services">
     <VendorBanner title="Manage Services" description="Review Vendor listings, update service information, and manage visibility." />
@@ -149,6 +173,11 @@ export function ManageServices() {
           { label: "Active Services", value: stats ? format.format(stats.active) : "—", icon: CircleCheck },
           { label: "Inactive Services", value: stats ? format.format(stats.inactive) : "—", icon: CircleMinus },
         ]} />
+        <div className="admin-user-presets" role="group" aria-label="Moderation filters">
+          {(["", ...moderationStatus.options] as const).map((value) =>
+            <button type="button" key={value} className="wp-button wp-button-outline" aria-pressed={filters.moderationStatus === value}
+              onClick={() => setFilters((current) => ({ ...current, moderationStatus: value, page: 1 }))}>{value ? moderationLabels[value] : "All moderation statuses"}</button>)}
+        </div>
         <div className="admin-user-presets" role="group" aria-label="Service visibility filters">
           {([["", "All Services"], ["active", "Active"], ["inactive", "Inactive"]] as const).map(([value, label]) =>
             <button type="button" key={label} className="wp-button wp-button-outline" aria-pressed={filters.visibility === value}
@@ -169,10 +198,10 @@ export function ManageServices() {
           : <section className="vendor-card admin-user-table" aria-label="Service listings" aria-busy={services.isFetching}>
             {rows.length ? <div className="vendor-table-wrap" tabIndex={0} role="region" aria-label="Scrollable services table">
               <table className="vendor-table"><thead><tr>
-                <th scope="col">Service</th><th scope="col">Category</th><th scope="col">Vendor</th><th scope="col">Price</th><th scope="col">Visibility</th><th scope="col">Created on</th><th scope="col">Actions</th>
+                <th scope="col">Service</th><th scope="col">Category</th><th scope="col">Vendor</th><th scope="col">Price</th><th scope="col">Moderation</th><th scope="col">Public visibility</th><th scope="col">Created on</th><th scope="col">Actions</th>
               </tr></thead><tbody>{rows.map((service) => <tr key={service.id} data-selected={selected?.id === service.id}>
-                <th scope="row">{service.title}</th><td><span className="vendor-badge">{service.category}</span></td>
-                <td>{vendorName(service.vendor)}</td><td>{price.format(service.price)}</td><td><ServiceStatus active={service.isActive} /></td>
+                <th scope="row"><div className="vendor-service-cell"><ServiceCover service={service} /><div>{service.title}<span>{service.location}</span></div></div></th><td><span className="vendor-badge">{service.category}</span></td>
+                <td>{vendorName(service.vendor)}</td><td>{price.format(service.price)}</td><td><ModerationBadge status={service.moderationStatus} /></td><td><ServiceStatus active={service.isActive} /></td>
                 <td><time dateTime={service.createdAt}>{date.format(new Date(service.createdAt))}</time></td>
                 <td><div className="admin-user-actions">
                   <button type="button" className="wp-button wp-button-outline admin-user-action" aria-label={`View ${service.title}`}
@@ -204,14 +233,14 @@ export function ManageServices() {
         </header>
         {detail.isPending ? <ServiceSkeleton label="Loading service details…" />
           : detail.isError ? <AdminRequestError title="Unable to load service details" error={detail.error} retry={() => void detail.refetch()} />
-          : <><div><h3>{detail.data.title}</h3><p>{vendorName(selected.vendor)}</p></div>
+          : <><ServiceCover service={detail.data} detail /><div><h3>{detail.data.title}</h3><p>{vendorName(selected.vendor)}</p></div>
             {actions(detail.data)}
             <dl className="admin-metrics">
               <div><dt>Category</dt><dd>{detail.data.category}</dd></div>
               <div><dt>Vendor ID</dt><dd>{detail.data.vendorId}</dd></div>
               <div><dt>Price</dt><dd>{price.format(detail.data.price)}</dd></div>
               <div><dt>Location</dt><dd>{detail.data.location}</dd></div>
-              <div><dt>Visibility</dt><dd><ServiceStatus active={detail.data.isActive} /></dd></div>
+              <div><dt>Moderation</dt><dd><ModerationBadge status={detail.data.moderationStatus} /></dd></div><div><dt>Saved availability</dt><dd>{detail.data.vendorAvailable ? "Enabled" : "Paused"}</dd></div><div><dt>Public visibility</dt><dd><ServiceStatus active={detail.data.isActive} /></dd></div>
               <div><dt>Created on</dt><dd><time dateTime={detail.data.createdAt}>{date.format(new Date(detail.data.createdAt))}</time></dd></div>
             </dl>
             <div><h3>Description</h3><p className="admin-service-description">{detail.data.description}</p></div>
@@ -229,9 +258,11 @@ export function ManageServices() {
           <label>Location<input name="location" defaultValue={action.service.location} maxLength={120} required /></label>
           <label>Description<textarea name="description" defaultValue={action.service.description} maxLength={5000} required /></label>
         </fieldset> : <p>{action.type === "delete" ? `Permanently delete “${action.service.title}”?`
-          : `${action.service.isActive ? "Hide" : "Publish"} “${action.service.title}” in the marketplace?`}</p>}
+                    : action.type === "moderation" ? `${action.status === "approved" ? "Approve" : "Reject"} “${action.service.title}”? ${action.status === "approved"
+            ? "Publication depends on saved availability and the Vendor’s plan." : "The listing will stay out of the public directory."}`
+          : `${action.service.vendorAvailable ? "Pause" : "Enable"} availability for “${action.service.title}”? Publication depends on the Vendor’s plan.`}</p>}
         {(editError || operation.isError) && <p role="alert" className="admin-user-mutation-error">{editError ||
-          (errorStatus === 409 ? "A Free Vendor can have at most 3 active services. Deactivate another listing before activating this one."
+          (errorStatus === 409 ? (action.type === "moderation" ? "This submission is no longer pending. Close the dialog and refresh the listing." : "Availability can only change after approval. Refresh the listing to check its current status.")
             : errorStatus === 404 ? "This service no longer exists." : errorStatus === 403 ? "The server denied this action."
               : errorStatus === 401 ? "Your session expired. Sign in again before retrying." : "Could not update the service. Please try again.")}</p>}
         <div className="vendor-actions">

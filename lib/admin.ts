@@ -1,14 +1,15 @@
 "use client"
 
 import { z } from "zod"
+import type { ModerationStatus } from "@/lib/service-publication"
 import { authClient } from "@/lib/auth"
-import { serviceInput, type ServiceInput } from "@/lib/vendor-services"
+import { managedService, type ServiceInput } from "@/lib/vendor-services"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const count = z.number().int().nonnegative()
 const overviewSchema = z.object({ data: z.object({
   users: z.object({ total: count, customers: count, vendors: count, admins: count, active: count, blocked: count }),
-  services: z.object({ total: count, active: count, inactive: count }),
+  services: z.object({ total: count, active: count, inactive: count, pending: count }),
   bookings: z.object({ total: count, pending: count, accepted: count, rejected: count, cancelled: count }),
   subscriptions: z.object({ premium: count, free: count, cancellationScheduled: count }),
   revenue: z.object({
@@ -81,10 +82,7 @@ export async function updateAdminUserStatus(id: string, status: AdminUser["statu
   return userDetail.parse(await adminRequest("/api/admin/users/" + encodeURIComponent(id) + "/status", undefined, { status })).data
 }
 
-const adminService = serviceInput.extend({
-  id: z.string().regex(/^[a-f0-9]{24}$/i), vendorId: z.string(),
-  createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
-})
+const adminService = managedService.extend({ id: z.string().regex(/^[a-f0-9]{24}$/i) })
 const vendorDisplay = z.object({ id: z.string(), name: z.string().optional(), businessName: z.string().optional() })
 const adminServiceDetail = z.object({ data: adminService })
 const adminServiceList = z.object({
@@ -93,7 +91,7 @@ const adminServiceList = z.object({
 })
 export type AdminService = z.infer<typeof adminService>
 export type AdminServiceRow = z.infer<typeof adminServiceList>["data"][number]
-export type AdminServiceFilters = { q: string; category: string; vendorId: string; visibility: "" | "active" | "inactive"; page: number }
+export type AdminServiceFilters = { q: string; category: string; vendorId: string; visibility: "" | "active" | "inactive"; moderationStatus: "" | ModerationStatus; page: number }
 
 export async function listAdminServices(filters: AdminServiceFilters, signal: AbortSignal) {
   const { page, ...values } = filters
@@ -110,6 +108,10 @@ export async function getAdminService(id: string, signal: AbortSignal) {
 
 export async function updateAdminService(id: string, patch: Partial<ServiceInput>) {
   return adminServiceDetail.parse(await adminRequest(adminServicePath(id), undefined, patch)).data
+}
+
+export async function moderateAdminService(id: string, status: Exclude<ModerationStatus, "pending">) {
+  return adminServiceDetail.parse(await adminRequest(adminServicePath(id) + "/moderation", undefined, { status })).data
 }
 
 export async function deleteAdminService(id: string) {

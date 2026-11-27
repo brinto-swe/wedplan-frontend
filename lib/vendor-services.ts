@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
+import { publicationFields } from "@/lib/service-publication"
 import { serviceImageUrls } from "@/lib/service-image-urls"
 import { accountProfile, type AccountProfile } from "@/lib/profile"
 
@@ -15,23 +16,24 @@ export const serviceInput = z.object({
   description: requiredText("Description", 5000),
   price: z.number({ error: "Enter a valid price." }).min(0, "Price must be zero or more.").max(1_000_000_000, "Price is too high."),
   location: requiredText("Location", 120),
-  isActive: z.boolean(),
+  isActive: z.boolean().optional(),
   images: serviceImageUrls.optional(),
 })
 export const createServiceInput = serviceInput.extend({ images: serviceImageUrls.min(1, "Upload at least one service image.") })
-const service = serviceInput.extend({
+export const managedService = serviceInput.extend({
+  ...publicationFields,
   id: z.string(), vendorId: z.string(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 })
-const detailResponse = z.object({ data: service })
+const detailResponse = z.object({ data: managedService })
 const pageResponse = z.object({
-  data: z.array(service),
+  data: z.array(managedService),
   pagination: z.object({ totalPages: z.number().int().nonnegative().max(10_000) }),
 })
 const errorResponse = z.object({
   issues: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
 })
 
-export type VendorService = z.infer<typeof service>
+export type VendorService = z.infer<typeof managedService>
 export type ServiceInput = z.infer<typeof serviceInput>
 export type VendorProfile = AccountProfile
 export type Plan = "Free" | "Premium" | "Unavailable"
@@ -69,7 +71,7 @@ async function request(path: string, token: string, options: RequestInit = {}) {
     401: "Your session has expired. Sign in again.",
     403: "This action is unavailable for your account.",
     404: "This service could not be found in your workspace.",
-    409: "Free vendors can have up to 3 active services. Save this service as inactive or make another service inactive first.",
+    409: "Service availability can only change after approval. Reload the service to check its current status.",
     429: "Too many requests. Please wait a moment and try again.",
   }
   throw new VendorApiError(response.status, messages[response.status] ?? "The service API is unavailable. Please try again.", fields)

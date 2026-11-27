@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { moderationStatus } from "@/lib/service-publication"
 import { serviceImageUrls } from "@/lib/service-image-urls"
 
 const serviceSchema = z.object({
@@ -10,7 +11,13 @@ const serviceSchema = z.object({
   location: z.string(),
   vendorId: z.string(),
   images: serviceImageUrls.optional(),
+  moderationStatus: moderationStatus.optional(),
+  isActive: z.boolean().optional(),
 })
+
+function isPublicService(service: z.infer<typeof serviceSchema>) {
+  return service.isActive === true && service.moderationStatus === "approved"
+}
 
 export type Service = z.infer<typeof serviceSchema> & { vendorName?: string; demo?: true }
 export type Filters = { q?: string; category?: string; location?: string; page: number }
@@ -83,7 +90,8 @@ export async function listServices(filters: Filters, limit = 9): Promise<Service
   try {
     const response = await request(`/api/services?${params}`)
     if (!response.ok) throw new Error("Service catalog unavailable")
-    return { ...listSchema.parse(await response.json()), demo: false }
+    const result = listSchema.parse(await response.json())
+    return { ...result, data: result.data.filter(isPublicService), demo: false }
   } catch {
     const data = demos.filter((item) =>
       (!filters.category || item.category.toLowerCase() === filters.category.toLowerCase()) &&
@@ -107,7 +115,8 @@ export async function getService(id: string): Promise<{ kind: "found"; service: 
     const response = await request(`/api/services/${encodeURIComponent(id)}`)
     if (response.status === 404) return { kind: "missing" }
     if (!response.ok) return { kind: "unavailable" }
-    return { kind: "found", service: detailSchema.parse(await response.json()).data }
+    const { data } = detailSchema.parse(await response.json())
+    return isPublicService(data) ? { kind: "found", service: data } : { kind: "missing" }
   } catch {
     return { kind: "unavailable" }
   }

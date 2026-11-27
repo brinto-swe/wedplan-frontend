@@ -7,8 +7,8 @@ const uploadedUrl = (name: string) => `https://i.ibb.co/test/${name}`
 const newPath = "/vendor/services/new"
 const editPath = `/vendor/services/${service.id}/edit`
 
-async function editor(page: Page, options: { wait?: Promise<void>; role?: string; foreign?: boolean; listing?: typeof service } = {}) {
-  const user = { id: service.vendorId, role: options.role ?? "vendor", name: "Fixture Vendor", email: "vendor@example.test" }
+async function editor(page: Page, options: { wait?: Promise<void>; role?: string; foreign?: boolean; listing?: Omit<typeof service, "moderationStatus"> & { moderationStatus: "pending" | "approved" | "rejected" }; services?: object[]; plan?: "free" | "premium" } = {}) {
+  const user = { subscriptionPlan: options.plan ?? "free", subscriptionExpiresAt: "2099-01-01T00:00:00.000Z", id: service.vendorId, role: options.role ?? "vendor", name: "Fixture Vendor", email: "vendor@example.test" }
   const uploads: string[] = []
   const writes: Array<{ method: string; body: Record<string, unknown> }> = []
   const listing = options.listing ?? service
@@ -29,7 +29,7 @@ async function editor(page: Page, options: { wait?: Promise<void>; role?: string
       if (image.name.startsWith("fail")) return route.fulfill({ status: 502, json: {} })
       return route.fulfill({ status: 201, json: { data: [{ url: uploadedUrl(image.name) }] } })
     }
-    if (path === "/api/services/manage") return route.fulfill({ json: { data: [listing], pagination: { totalPages: 1 } } })
+    if (path === "/api/services/manage") return route.fulfill({ json: { data: options.services ?? [listing], pagination: { totalPages: 1 } } })
     if (path === `/api/services/manage/${service.id}`) {
       return route.fulfill({ json: { data: { ...listing, ...(options.foreign && { vendorId: legacy.id }) } } })
     }
@@ -37,7 +37,7 @@ async function editor(page: Page, options: { wait?: Promise<void>; role?: string
       const method = req.method()
       const body = req.postDataJSON()
       writes.push({ method, body })
-      return route.fulfill({ status: method === "POST" ? 201 : 200, json: { data: { ...listing, ...body } } })
+      return route.fulfill({ status: method === "POST" ? 201 : 200, json: { data: { ...listing, ...body, ...(method === "POST" && { isActive: false, vendorAvailable: body.isActive, moderationStatus: "pending" }) } } })
     }
     return route.fulfill({ status: 404, json: {} })
   })
@@ -52,20 +52,21 @@ async function fillService(page: Page) {
   await page.getByLabel("Description", { exact: true }).fill(service.description)
 }
 
-test("creates an active service with ordered hosted images and locks save during uploads", async ({ page }) => {
+test("submits a pending service with ordered hosted images and locks save during uploads", async ({ page }) => {
   const { promise, resolve } = Promise.withResolvers<void>()
   const { uploads, writes, files } = await editor(page, { wait: promise })
   await page.goto(newPath)
   await fillService(page)
-  await page.getByLabel("Publish as active").check()
+  await page.getByLabel("Enable availability").check()
   await files.setInputFiles([file("first.png"), file("next.png")])
   try {
     await expect(page.getByRole("button", { name: "Uploading images…" })).toBeDisabled()
     expect(writes).toEqual([])
   } finally { resolve() }
   await expect(page.getByRole("img", { name: "Uploaded image 2" })).toBeVisible()
-  await page.getByRole("button", { name: "Create service" }).click()
+  await page.getByRole("button", { name: "Submit for review" }).click()
   await expect(page).toHaveURL(/\/vendor\/services$/)
+  await expect(page.getByText("Service submitted and pending Admin review.")).toBeVisible()
   expect(uploads).toEqual(["first.png", "next.png"])
   expect(writes).toEqual([{ method: "POST", body: {
     title: service.title, description: service.description, category: service.category, price: service.price,
@@ -77,7 +78,8 @@ test("requires an uploaded image and excludes failed uploads from a partially su
   const { writes, files } = await editor(page)
   await page.goto(newPath)
   await fillService(page)
-  const create = page.getByRole("button", { name: "Create service" })
+  await page.getByLabel("Keep paused").check()
+  const create = page.getByRole("button", { name: "Submit for review" })
   await create.click()
   await expect(page.getByText("Upload at least one service image.", { exact: true })).toBeVisible()
   await files.setInputFiles(file("fail.png"))
@@ -182,4 +184,69 @@ test("Customer booking summaries use the listing cover", async ({ page }) => {
   })
   await page.goto("/customer/bookings")
   await expect(page.locator(".booking-rows img").first()).toHaveAttribute("src", cover)
+})
+
+test("Vendor service list separates moderation, saved availability and effective publication", async ({ page }) => {
+  await editor(page, { services: [
+    { ...service, title: "Pending listing", moderationStatus: "pending", isActive: false },
+    { ...legacy, title: "Rejected listing", moderationStatus: "rejected", isActive: false },
+    { ...service, id: "100000000000000000000004", title: "Older approved listing", isActive: false },
+    { ...service, id: "100000000000000000000005", title: "Published listing" },
+    { ...service, id: "100000000000000000000006", title: "Paused listing", vendorAvailable: false, isActive: false },
+  ] })
+  await page.goto("/vendor/services")
+  await expect(page.getByRole("region", { name: "Service limit" })).toContainText("3 newest approved services")
+  const row = (title: string) => page.getByRole("row").filter({ hasText: title })
+  await expect(row("Pending listing")).toContainText("Awaiting Admin review")
+  await expect(row("Rejected listing")).toContainText("Ineligible for public display")
+  await expect(row("Older approved listing")).toContainText("Approved")
+  await expect(row("Older approved listing")).toContainText("Enabled")
+  await expect(row("Older approved listing")).toContainText("Still saved")
+  await expect(row("Published listing").getByText("Active", { exact: true })).toBeVisible()
+  await expect(row("Paused listing").getByText("Paused", { exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(approve|reject)\b/i })).toHaveCount(0)
+})
+
+test("Vendor can edit pending content without submitting a moderation or availability field", async ({ page }) => {
+  const { writes } = await editor(page, { listing: { ...service, moderationStatus: "pending", isActive: false } })
+  await page.goto(editPath)
+  await expect(page.getByText("Awaiting Admin review. Availability is locked.")).toBeVisible()
+  await expect(page.getByLabel("Enable availability")).toHaveCount(0)
+  await page.getByLabel("Service title").fill("Updated pending service")
+  await page.getByRole("button", { name: "Save changes" }).click()
+  await expect(page).toHaveURL(/\/vendor\/services$/)
+  expect(writes[0].body).toMatchObject({ title: "Updated pending service", images: [cover, second] })
+  expect(writes[0].body).not.toHaveProperty("moderationStatus")
+  expect(writes[0].body).not.toHaveProperty("isActive")
+})
+
+test("public catalogue and detail omit unpublished and unapproved service records", async ({ page }) => {
+  const origin = "http://127.0.0.1:3195"
+  await page.goto(origin + "/services")
+  await expect(page.getByRole("article").filter({ hasText: service.title })).toBeVisible()
+  for (const [id, title] of [
+    ["100000000000000000000007", "Pending fixture"],
+    ["100000000000000000000008", "Rejected fixture"],
+    ["100000000000000000000009", "Inactive fixture"],
+  ]) {
+    await expect(page.getByText(title, { exact: true })).toHaveCount(0)
+    const response = await page.goto(origin + "/services/" + id)
+    // Streamed Next.js not-found pages may retain HTTP 200.
+    expect([200, 404]).toContain(response?.status())
+    await expect(page.getByRole("heading", { name: title })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: /service not found|this page could not be found/i })).toBeVisible()
+  }
+})
+
+test("Premium keeps approved paused availability separate from publication", async ({ page }) => {
+  const paused = { ...service, title: "Paused Premium Service", isActive: false, vendorAvailable: false }
+  await editor(page, { plan: "premium", listing: paused })
+  await page.goto("/vendor/services")
+  await expect(page.getByRole("region", { name: "Service limit" })).toContainText("Manually paused services stay off.")
+  const row = page.getByRole("row").filter({ hasText: paused.title })
+  await expect(row.getByText("Approved", { exact: true })).toBeVisible()
+  await expect(row.getByText("Paused", { exact: true })).toBeVisible()
+  await expect(row.getByText("Inactive", { exact: true })).toBeVisible()
+  await row.getByRole("link", { name: "Edit " + paused.title }).click()
+  await expect(page.getByLabel("Keep paused")).toBeChecked()
 })

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 
 const adminOverview = { data: {
   users: { total: 0, customers: 0, vendors: 0, admins: 0, active: 0, blocked: 0 },
-  services: { total: 0, active: 0, inactive: 0 },
+  services: { total: 0, active: 0, inactive: 0, pending: 0 },
   bookings: { total: 0, pending: 0, accepted: 0, rejected: 0, cancelled: 0 },
   subscriptions: { premium: 0, free: 0, cancellationScheduled: 0 },
   revenue: { amountUnit: "minor", dateBasis: "stripe_invoice_event", paidInvoiceCount: 0, failedInvoiceCount: 0, paidByCurrency: [] },

@@ -153,3 +153,7 @@
 .profile-settings-actions { justify-content:space-between; }
 @media (max-width: 900px) { .profile-settings { grid-template-columns:minmax(0,1fr); } }
 .profile-settings-aside [aria-label="Image previews"] { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+.vendor-badge[data-moderation="pending"] { border: 1px dashed currentColor; }
+.vendor-badge[data-moderation="rejected"] { background: transparent; border: 1px solid currentColor; }
+.vendor-publication-note { margin-top: .25rem; max-width: 13rem; font-size: .82rem; color: var(--wp-muted); }

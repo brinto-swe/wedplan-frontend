@@ -1,6 +1,7 @@
 "use client"
 
 import { UiIcon } from "@/components/ui/icon"
+import { ModerationBadge } from "@/components/ui/moderation-badge"
 import { ServicePhoto } from "@/components/public/service-photo"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
@@ -63,8 +64,8 @@ export function MyServices() {
     ]} />
     <section className="vendor-plan-strip" aria-label="Service limit">
       <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
-      <p>{plan === "Free" ? query.data ? `${active} of ${activeLimit} active services used` : `Up to ${activeLimit} active services`
-        : plan === "Premium" ? "Unlimited active services" : "Subscription data is unavailable"}</p>
+      <p>{plan === "Free" ? `Only your ${activeLimit} newest approved services are eligible to publish. Older approved services stay saved. Paused services stay off.`
+        : plan === "Premium" ? "All approved services are eligible to publish. Manually paused services stay off." : "Subscription data is unavailable. Public visibility reflects the latest service response."}</p>
     </section>
     {notice && <p className="vendor-notice" role="status">{notice}</p>}
     <dialog ref={dialog} className="vendor-confirm" aria-labelledby="delete-service-title" onCancel={(event) => { event.preventDefault(); if (!removal.isPending) setSelected(null) }}>
@@ -84,18 +85,26 @@ export function MyServices() {
         <div className="vendor-toolbar">
           <label className="vendor-search"><span>Search services</span><span><UiIcon icon={Search} size="sm" /><input type="search" value={search} placeholder="Title, category, or location" onChange={(event) => { setSearch(event.target.value); setPage(1) }} /></span></label>
           <label>Category<select value={category} onChange={(event) => {setCategory(event.target.value); setPage(1)}}><option value="">All categories</option>{[...new Set(items.map((item) => item.category))].sort().map((value) => <option key={value}>{value}</option>)}</select></label>
-          <label>Status<select value={status} onChange={(event) => { const value = event.target.value; setStatus(value === "active" || value === "inactive" ? value : "all"); setPage(1) }}>
+          <label>Public visibility<select value={status} onChange={(event) => { const value = event.target.value; setStatus(value === "active" || value === "inactive" ? value : "all"); setPage(1) }}>
             <option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option>
           </select></label>
         </div>
         {visible.length ? <>
           <div className="vendor-table-wrap"><table className="vendor-table">
-            <thead><tr><th scope="col">Service</th><th scope="col">Category</th><th scope="col">Price</th><th scope="col">Status</th><th scope="col">Created</th><th scope="col">Actions</th></tr></thead>
+            <thead><tr><th scope="col">Service</th><th scope="col">Category</th><th scope="col">Price</th><th scope="col">Moderation</th><th scope="col">Saved availability</th><th scope="col">Public visibility</th><th scope="col">Created</th><th scope="col">Actions</th></tr></thead>
             <tbody>{visible.map((item) => <tr key={item.id}>
               <td><div className="vendor-service-cell"><ServicePhoto src={item.images?.[0] ?? serviceImages(item.category)[0].image}
                 fallback={serviceImages(item.category)[0].image} alt="" width={70} height={43} /><div><strong>{item.title}</strong><span>{item.location}</span></div></div></td>
               <td><span className="vendor-badge">{item.category}</span></td><td>{formatPrice.format(item.price)}</td>
-              <td><span className={`vendor-badge ${item.isActive ? "vendor-active" : ""}`}>{item.isActive ? "Active" : "Inactive"}</span></td>
+              <td><ModerationBadge status={item.moderationStatus} />
+                {item.moderationStatus === "pending" && <p className="vendor-publication-note">Awaiting Admin review</p>}
+                {item.moderationStatus === "rejected" && <p className="vendor-publication-note">Ineligible for public display</p>}
+              </td>
+              <td>{item.moderationStatus === "approved" ? item.vendorAvailable ? "Enabled" : "Paused" : "Locked until approval"}</td>
+              <td><span className={`vendor-badge ${item.isActive ? "vendor-active" : ""}`}>{item.isActive ? "Active" : "Inactive"}</span>
+                {item.moderationStatus === "approved" && item.vendorAvailable && !item.isActive &&
+                  <p className="vendor-publication-note">{plan === "Free" ? "Outside the Free plan’s latest three. Still saved." : "Availability enabled. Currently unpublished."}</p>}
+              </td>
               <td><time dateTime={item.createdAt}>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.createdAt))}</time></td><td><div className="vendor-row-actions">
                 {item.isActive && <Link aria-label={`View ${item.title}`} href={`/services/${item.id}`}><UiIcon icon={Eye} size="sm" /></Link>}
                 <Link aria-label={`Edit ${item.title}`} href={`/vendor/services/${item.id}/edit`}><UiIcon icon={Pencil} size="sm" /></Link>

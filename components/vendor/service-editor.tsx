@@ -1,6 +1,8 @@
 "use client"
 
 import { UiIcon } from "@/components/ui/icon"
+import { ModerationBadge } from "@/components/ui/moderation-badge"
+import { toast } from "sonner"
 import { ImageUploader } from "@/components/ui/image-uploader"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -14,6 +16,7 @@ import { VendorBanner } from "./presentation"
 
 function EditorForm({ service }: { service?: VendorService }) {
   const { profile } = useVendor()
+  const canSetAvailability = !service || service.moderationStatus === "approved"
   const router = useRouter()
   const client = useQueryClient()
   const [issues, setIssues] = useState<Record<string, string>>({})
@@ -26,6 +29,7 @@ function EditorForm({ service }: { service?: VendorService }) {
       setSaved(true)
       client.setQueryData(["vendor-service", profile.id, result.id], result)
       void client.invalidateQueries({ queryKey: vendorServicesKey(profile.id) })
+      if (!service) toast.success("Service submitted and pending Admin review.")
       router.push("/vendor/services")
     },
   })
@@ -38,7 +42,8 @@ function EditorForm({ service }: { service?: VendorService }) {
     const price = String(values.get("price") ?? "").trim()
     const parsed = (service ? serviceInput : createServiceInput).safeParse({
       title: values.get("title"), category: values.get("category"), description: values.get("description"),
-      location: values.get("location"), price: price ? Number(price) : NaN, isActive: values.get("status") === "active", images,
+      location: values.get("location"), price: price ? Number(price) : NaN, images,
+      ...(canSetAvailability && { isActive: values.get("status") === "active" }),
     })
     if (!parsed.success) {
       const errors: Record<string, string> = {}
@@ -81,10 +86,20 @@ function EditorForm({ service }: { service?: VendorService }) {
         {fieldError("images")}
       </section>
     </fieldset>
-    <aside className="vendor-editor-aside"><fieldset disabled={mutation.isPending || saved} className="vendor-card vendor-status"><legend>Service Status</legend>
-      <label><input type="radio" name="status" value="active" defaultChecked={service?.isActive === true} />Publish as active</label><p>Visible in the public directory. Active service limits apply.</p>
-      <label><input type="radio" name="status" value="inactive" defaultChecked={!service?.isActive} />Save as draft</label><p>Keep this service private until you’re ready to publish.</p>
-    </fieldset><section className="vendor-card vendor-guidelines"><h2>Publishing Guidelines</h2><ul>{["Use a clear service title.", "Choose an accurate category.", "Check the price and location.", "Describe what’s included."].map((tip) => <li key={tip}><UiIcon icon={Check} size="sm" />{tip}</li>)}</ul></section></aside></div>
+    <aside className="vendor-editor-aside">
+      <section className="vendor-card vendor-guidelines">
+        <h2>Moderation</h2>
+        {service ? <><ModerationBadge status={service.moderationStatus} />
+          <p>{service.moderationStatus === "approved" ? (service.isActive ? "Visible in the public directory." : "Currently hidden from the public directory.") :
+            service.moderationStatus === "pending" ? "Awaiting Admin review. Availability is locked." : "This listing is ineligible for public display."}</p></>
+          : <p>New services are submitted for Admin review.</p>}
+      </section>
+      {canSetAvailability && <fieldset disabled={mutation.isPending || saved} className="vendor-card vendor-status"><legend>{service ? "Saved availability" : "Availability after approval"}</legend>
+        <label><input type="radio" name="status" value="active" defaultChecked={!service || service.vendorAvailable} />Enable availability</label><p>Publication depends on Admin approval and your subscription plan.</p>
+        <label><input type="radio" name="status" value="inactive" defaultChecked={service?.vendorAvailable === false} />Keep paused</label><p>Keep the listing hidden until you enable availability.</p>
+      </fieldset>}
+      <section className="vendor-card vendor-guidelines"><h2>Publishing Guidelines</h2><ul>{["Use a clear service title.", "Choose an accurate category.", "Check the price and location.", "Describe what’s included."].map((tip) => <li key={tip}><UiIcon icon={Check} size="sm" />{tip}</li>)}</ul></section>
+    </aside></div>
     {Object.keys(issues).length > 0 && <p className="vendor-field-error" role="alert">Check the highlighted fields before saving.</p>}
     {error && <div role="alert" className="vendor-notice vendor-error">
       <p>{error instanceof VendorApiError ? error.message : "The request could not be confirmed. Check My Services before trying again."}</p>
@@ -92,7 +107,7 @@ function EditorForm({ service }: { service?: VendorService }) {
     </div>}
     <div className="vendor-actions">
       <button className="wp-button" type="submit" disabled={mutation.isPending || saved || uploading}>
-        {saved ? "Saved" : mutation.isPending ? "Saving…" : uploading ? "Uploading images…" : service ? "Save changes" : "Create service"}
+        {saved ? "Saved" : mutation.isPending ? "Saving…" : uploading ? "Uploading images…" : service ? "Save changes" : "Submit for review"}
       </button>
       <Link className="wp-button wp-button-outline" href="/vendor/services">Cancel</Link>
     </div>
