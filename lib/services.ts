@@ -79,9 +79,13 @@ export function parseFilters(query: Record<string, string | string[] | undefined
   return { q: field("q", 120), category: field("category", 80), location: field("location", 120), page }
 }
 
-async function request(path: string) {
+async function request(path: string, token?: string, signal?: AbortSignal) {
   const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
-  return fetch(new URL(path, origin), { cache: "no-store", signal: AbortSignal.timeout(3000) })
+  return fetch(new URL(path, origin), {
+    cache: "no-store", credentials: "omit",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    signal: AbortSignal.any([AbortSignal.timeout(3000), ...(signal ? [signal] : [])]),
+  })
 }
 
 export async function listServices(filters: Filters, limit = 9): Promise<ServiceList> {
@@ -104,7 +108,7 @@ export async function listServices(filters: Filters, limit = 9): Promise<Service
   }
 }
 
-export async function getService(id: string): Promise<{ kind: "found"; service: Service } | { kind: "missing" | "unavailable" }> {
+export async function getService(id: string, token: string, signal?: AbortSignal): Promise<{ kind: "found"; service: Service } | { kind: "missing" | "unauthorized" | "forbidden" | "unavailable" }> {
   const demo = demos.find((service) => service.id === id)
   if (demo) {
     const catalog = await listServices({ page: 1 }, 1)
@@ -112,7 +116,9 @@ export async function getService(id: string): Promise<{ kind: "found"; service: 
   }
   if (!/^[a-f0-9]{24}$/i.test(id)) return { kind: "missing" }
   try {
-    const response = await request(`/api/services/${encodeURIComponent(id)}`)
+    const response = await request(`/api/services/${encodeURIComponent(id)}`, token, signal)
+    if (response.status === 401) return { kind: "unauthorized" }
+    if (response.status === 403) return { kind: "forbidden" }
     if (response.status === 404) return { kind: "missing" }
     if (!response.ok) return { kind: "unavailable" }
     const { data } = detailSchema.parse(await response.json())

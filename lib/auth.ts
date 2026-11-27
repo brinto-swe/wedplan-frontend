@@ -39,14 +39,19 @@ export class ProtectedProfileError extends Error {
   }
 }
 
-export async function fetchProtectedProfile(signal?: AbortSignal) {
+export async function getProtectedToken(signal?: AbortSignal) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
   if (error || !data?.token) throw new ProtectedProfileError(error?.status ?? 401, "Sign in to request a bearer token.")
 
+  return data.token
+}
+
+export async function fetchProtectedProfile(signal?: AbortSignal, bearer?: string) {
+  const token = bearer ?? await getProtectedToken(signal)
   const response = await fetch(new URL("/api/me", apiOrigin), {
     credentials: "omit",
     cache: "no-store",
-    headers: { Authorization: `Bearer ${data.token}` },
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
   })
   if (!response.ok) throw new ProtectedProfileError(response.status, `Protected profile returned HTTP ${response.status}.`)

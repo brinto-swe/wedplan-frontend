@@ -1,51 +1,9 @@
-import { BookingRequest } from "@/components/bookings/request-form"
-import { UiIcon } from "@/components/ui/icon"
 import type { Metadata } from "next"
-import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ChevronRight, MapPin } from "lucide-react"
-
-import { Gallery } from "@/components/public/gallery"
-import { RetryButton } from "@/components/public/retry-button"
-import { ActionLink, DemoNotice, EmptyState } from "@/components/public/ui"
-import { formattedPrice, getService, serviceImages } from "@/lib/services"
+import { ServiceDetails } from "@/components/public/service-details"
 
 export const metadata: Metadata = { title: "Service details" }
 
 export default async function ServicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ book?: string }> }) {
-  const { id } = await params
-  const result = await getService(id)
-  if (result.kind === "missing") notFound()
-  if (result.kind !== "found") return <div className="wp-wrap wp-section">
-    <EmptyState title="Service details unavailable"><p>We couldn’t reach the wedding directory. Try again in a moment.</p>
-      <RetryButton />{" "}
-      <ActionLink href="/services">Browse services</ActionLink>
-    </EmptyState>
-  </div>
-
-  const { service } = result
-  return (
-    <div className="wp-wrap wp-section">
-      <nav className="wp-breadcrumb" aria-label="Breadcrumb"><Link href="/services">Browse services</Link><UiIcon icon={ChevronRight} size="sm" /><span>{service.category}</span></nav>
-      {service.demo && <DemoNotice />}
-      <div className="wp-detail-grid wp-detail-reference">
-      <Gallery key={id} images={serviceImages(service.category, service.images, service.title)} />
-      <div className="wp-page-heading wp-detail-heading">
-        <p className="wp-kicker">{service.category}</p><h1>{service.title}</h1>
-        <p className="wp-location"><UiIcon icon={MapPin} size="md" />{service.location}</p>
-      </div>
-        <div className="wp-detail-about">
-          <section className="wp-detail-copy"><h2>About this service</h2><p>{service.description}</p></section>
-          <section className="wp-detail-copy"><h2>Vendor information</h2>
-            {service.vendorName ? <p>{service.vendorName}</p> : <p className="wp-vendor-id">Vendor reference {service.vendorId}</p>}
-            <p>Service location: {service.location}</p>
-          </section>
-        </div>
-        <aside className="wp-pricing">
-          <h2>Request Booking</h2><p className="wp-kicker">STARTING PRICE</p><p className="wp-detail-price">{formattedPrice(service)}</p>
-          <BookingRequest serviceId={id} autoOpen={(await searchParams).book === "1"} />
-        </aside>
-      </div>
-    </div>
-  )
+  const [{ id }, { book }] = await Promise.all([params, searchParams])
+  return <ServiceDetails key={id} id={id} autoOpen={book === "1"} />
 }

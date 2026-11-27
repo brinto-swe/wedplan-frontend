@@ -12,7 +12,7 @@ import { CalendarDays, ChevronDown, ChevronRight, Crown, HeartHandshake, LayoutD
 
 import { ActionLink } from "@/components/public/ui"
 import { authClient } from "@/lib/auth"
-import { billingReturn } from "@/lib/billing-navigation"
+import { signInFor } from "@/lib/auth-navigation"
 import { profileKey } from "@/lib/profile"
 import { getVendorProfile, listVendorServices, VendorApiError, vendorPlan, type Plan, type VendorProfile } from "@/lib/vendor-services"
 
@@ -77,11 +77,10 @@ function VendorGate({ children }: { children: ReactNode }) {
   })
   const pathname = usePathname()
   const router = useRouter()
-  const returnTo = billingReturn(pathname)
-  const signIn = returnTo && !user && (!session.error || session.error.status === 401)
+  const signIn = !user && (!session.error || session.error.status === 401)
   useEffect(() => {
-    if (signIn && !session.isPending) router.replace("/sign-in?next=" + encodeURIComponent(returnTo))
-  }, [returnTo, router, session.isPending, signIn])
+    if (signIn && !session.isPending) router.replace(signInFor(pathname))
+  }, [pathname, router, session.isPending, signIn])
 
   if (session.isPending || signIn || (user && profile.isPending && !session.error)) return <div className="vendor-gateway"><LoadingState /></div>
   if (session.error) {

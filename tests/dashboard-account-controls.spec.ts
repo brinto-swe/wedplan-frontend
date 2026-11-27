@@ -58,8 +58,7 @@ for (const role of ["admin", "vendor", "customer"]) {
     await page.goto(path)
     await expect(page.getByRole("heading", { name: /Welcome back/ })).toHaveCount(0)
     await expect(page.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0)
-    if (role === "admin") await expect(page).toHaveURL(/\/sign-in\?next=/)
-    else await expect(page.getByRole("heading", { name: "Sign in to your workspace" })).toBeVisible()
+    await expect(page).toHaveURL(/\/sign-in\?next=/)
   })
 
   test(`${role} theme switch respects System and persists an explicit preference`, async ({ page }) => {

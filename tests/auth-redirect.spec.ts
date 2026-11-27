@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { service } from "./fixtures/service-images"
+
 type Fixture = { role?: string; signedIn?: boolean; signInStatus?: number; profileStatus?: number }
 
 async function mockAuth(page: Page, fixture: Fixture) {
-  const identity = { id: "fixture-user", name: "Test Account", email: "test@example.test" }
+  const identity = { id: fixture.role === "vendor" ? service.vendorId : "fixture-user", name: "Test Account", email: "test@example.test" }
   // Session and form roles cannot determine the destination.
   const user = { ...identity, role: fixture.role === "admin" ? "customer" : "admin" }
   let signedIn = fixture.signedIn ?? false
@@ -36,6 +38,9 @@ async function mockAuth(page: Page, fixture: Fixture) {
         profileReads++
         expect(request.headers().authorization).toBe("Bearer fixture-token")
         return route.fulfill({ status: fixture.profileStatus ?? 200, json: { ...identity, role: fixture.role } })
+      case "/api/services/" + service.id:
+        expect(request.headers().authorization).toBe("Bearer fixture-token")
+        return route.fulfill({ json: { data: service } })
       default:
         return route.fulfill({ status: 404, json: {} })
     }
@@ -65,7 +70,7 @@ test("existing session can return to an allowlisted page for its verified role",
   await expect(page).toHaveURL(/\/admin\/transactions$/)
 })
 
-for (const next of ["/admin/users", "https://example.test/outside", "//example.test/outside"]) {
+for (const next of ["/admin/users", "https://example.test/outside", "//example.test/outside", "/services/" + service.id + "?next=//example.test", "/vendor/profile"]) {
   test(`ignores unsafe or wrong-role return destination ${next}`, async ({ page }) => {
     await mockAuth(page, { role: "customer", signedIn: true })
     await page.goto("/sign-in?next=" + encodeURIComponent(next))
@@ -107,3 +112,34 @@ test("a blocked existing session never navigates to a dashboard", async ({ page 
   await expect(page.getByText("We couldn’t sign you in with this account.")).toBeVisible()
   await expect(page).toHaveURL(/\/sign-in\?oauth=return$/)
 })
+
+test("guest details preserve the service and booking intent through email login", async ({ page }) => {
+  const reads = await mockAuth(page, { role: "customer" })
+  const destination = "/services/" + service.id + "?book=1"
+  await page.goto(destination)
+  await expect(page).toHaveURL(new RegExp("/sign-in\\?next=" + encodeURIComponent(destination) + "$"))
+  expect(reads()).toBe(0)
+  await submit(page)
+  await expect(page).toHaveURL(new RegExp("/" + service.id + "\\?book=1$"))
+  await expect(page.getByRole("heading", { name: service.title })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Send Booking Request" })).toBeVisible()
+})
+
+for (const role of ["vendor", "admin"]) {
+  test(`verified ${role} can return to the listing and cannot book`, async ({ page }) => {
+    await mockAuth(page, { role, signedIn: true })
+    await page.goto("/sign-in?next=" + encodeURIComponent("/services/" + service.id))
+    await expect(page).toHaveURL(new RegExp("/services/" + service.id + "$"))
+    await expect(page.getByRole("heading", { name: service.title })).toBeVisible()
+    await expect(page.getByText("Only customer accounts can request bookings.")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Send Booking Request" })).toHaveCount(0)
+  })
+}
+
+for (const path of ["/customer/dashboard", "/customer/profile", "/vendor/dashboard", "/vendor/profile", "/payment/cancel"]) {
+  test(`guest is redirected from ${path} with its return path`, async ({ page }) => {
+    await mockAuth(page, {})
+    await page.goto(path)
+    await expect(page).toHaveURL(new RegExp("/sign-in\\?next=" + encodeURIComponent(path) + "$"))
+  })
+}

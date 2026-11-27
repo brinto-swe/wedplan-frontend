@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { authClient, fetchProtectedProfile, ProtectedProfileError, signInEmail, signUpEmail } from "@/lib/auth"
-import { billingReturn } from "@/lib/billing-navigation"
-import { bookingReturn } from "@/lib/booking-navigation"
-import { adminDashboardPath, adminReturn } from "@/lib/admin-navigation"
+import { postLoginPath } from "@/lib/auth-navigation"
 
 export type AuthMode = "sign-in" | "sign-up"
 type Provider = "google" | "github"
@@ -37,13 +35,6 @@ function errorMessage(error: { code?: string; status?: number }, signup: boolean
   return signup ? "We couldn’t create your account. Please try again." : "We couldn’t sign you in. Please try again."
 }
 
-function postLoginPath(role: unknown, destination?: string) {
-  switch (role) {
-    case "admin": return adminReturn(destination) ?? adminDashboardPath
-    case "vendor": return billingReturn(destination) ?? "/vendor/dashboard"
-    case "customer": return bookingReturn(destination) ?? "/customer/dashboard"
-  }
-}
 
 const fields = {
   name: { label: "Full name", type: "text", autoComplete: "name", maxLength: 120 },

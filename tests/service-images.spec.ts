@@ -142,7 +142,18 @@ test("Customer accounts cannot use the Vendor service editor", async ({ page }) 
   await expect(page.getByRole("button", { name: "Choose images" })).toHaveCount(0)
 })
 
-test("public pages show actual covers, photo selection and fallbacks", async ({ page }) => {
+async function mockCatalogueSession(page: Page, signedIn: boolean) {
+  const user = { id: legacy.id, role: "customer", name: "Fixture Customer", email: "customer@example.test" }
+  await page.route("**/api/auth/get-session", (route) => route.fulfill({ json: signedIn ? { user, session: { id: "fixture" } } : null }))
+  await page.route("**/api/auth/token", (route) => route.fulfill({ json: { token: "fixture-token" } }))
+  await page.route("**/api/me", (route) => {
+    expect(route.request().headers().authorization).toBe("Bearer fixture-token")
+    return route.fulfill({ json: user })
+  })
+}
+
+test("public pages and authenticated details show actual covers, photo selection and fallbacks", async ({ page }) => {
+  await mockCatalogueSession(page, true)
   await page.route("https://i.ibb.co/**", (route) => route.request().url() === second
     ? route.fulfill({ status: 404 }) : route.fulfill({ body: png, contentType: "image/png" }))
   await page.route("**/_next/image?*", (route) => route.fulfill({ body: png, contentType: "image/png" }))
@@ -179,7 +190,10 @@ test("Customer booking summaries use the listing cover", async ({ page }) => {
     if (path === "/api/auth/token") return route.fulfill({ json: { token: "fixture-token" } })
     if (path === "/api/me") return route.fulfill({ json: user })
     if (path === "/api/bookings/my") return route.fulfill({ json: { data: [booking], pagination: { totalPages: 1 } } })
-    if (path === `/api/services/${service.id}`) return route.fulfill({ json: { data: service } })
+    if (path === `/api/services/${service.id}`) {
+      expect(route.request().headers().authorization).toBe("Bearer fixture-token")
+      return route.fulfill({ json: { data: service } })
+    }
     return route.fulfill({ status: 404, json: {} })
   })
   await page.goto("/customer/bookings")
@@ -220,7 +234,8 @@ test("Vendor can edit pending content without submitting a moderation or availab
   expect(writes[0].body).not.toHaveProperty("isActive")
 })
 
-test("public catalogue and detail omit unpublished and unapproved service records", async ({ page }) => {
+test("public catalogue and private detail omit unpublished and unapproved service records", async ({ page }) => {
+  await mockCatalogueSession(page, true)
   const origin = "http://127.0.0.1:3195"
   await page.goto(origin + "/services")
   await expect(page.getByRole("article").filter({ hasText: service.title })).toBeVisible()
@@ -249,4 +264,17 @@ test("Premium keeps approved paused availability separate from publication", asy
   await expect(row.getByText("Inactive", { exact: true })).toBeVisible()
   await row.getByRole("link", { name: "Edit " + paused.title }).click()
   await expect(page.getByLabel("Keep paused")).toBeChecked()
+})
+
+test("a guest can browse the catalogue but is redirected when opening a service card", async ({ page }) => {
+  await mockCatalogueSession(page, false)
+  let privateReads = 0
+  await page.route("**/api/services/" + service.id, (route) => {
+    privateReads++
+    return route.fulfill({ status: 401, json: {} })
+  })
+  await page.goto("http://127.0.0.1:3195/services")
+  await page.getByRole("article").filter({ hasText: service.title }).getByRole("link").click()
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fservices%2F100000000000000000000001$/)
+  expect(privateReads).toBe(0)
 })

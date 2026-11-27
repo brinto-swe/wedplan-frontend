@@ -1,7 +1,7 @@
 "use client"
 
 import { z } from "zod"
-import { authClient } from "@/lib/auth"
+import { authClient, getProtectedToken } from "@/lib/auth"
 import { serviceImageUrls } from "@/lib/service-image-urls"
 import { accountProfile } from "@/lib/profile"
 
@@ -94,7 +94,9 @@ export async function updateBooking(role: BookingRole, bookingId: string, action
 }
 
 export async function bookingService(serviceId: string, signal?: AbortSignal) {
+  const token = await getProtectedToken(signal)
   const response = await fetch(new URL(`/api/services/${id.parse(serviceId)}`, origin), {
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.any([AbortSignal.timeout(5000), ...(signal ? [signal] : [])]), cache: "no-store", credentials: "omit",
   })
   if (!response.ok) return null
