@@ -9,6 +9,12 @@
 .vendor-public-link { color: var(--link); text-decoration: underline; text-underline-offset: 4px; font-size: .9rem; margin: auto 9px 4px; }
 .vendor-topbar { min-height: 70px; padding: 12px clamp(16px, 4vw, 45px); background: var(--wp-surface); border-bottom: 1px solid var(--wp-line); display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 .vendor-topbar > span:first-child { overflow-wrap: anywhere; }
+.vendor-account-controls, .vendor-theme-toggle { display:flex; align-items:center; gap:10px; }
+.vendor-account-controls { flex-wrap:wrap; }
+.vendor-theme-toggle { padding-inline:4px; color:var(--wp-ink); font-size:.875rem; }
+.vendor-theme-toggle > svg { color:var(--wp-link); }
+.vendor-theme-toggle [role="switch"] { border-color:var(--wp-muted); }
+.vendor-account-controls .vendor-sign-out { min-height:36px; padding:5px 10px; white-space:nowrap; }
 .vendor-mobile-links { display: none; }
 .vendor-main { max-width: 1490px; padding: clamp(20px, 4vw, 48px); margin-inline: auto; }
 .vendor-stack { display: grid; gap: 20px; }

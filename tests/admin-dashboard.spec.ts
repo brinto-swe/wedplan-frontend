@@ -126,7 +126,7 @@ test("withholds metrics if the overview independently rejects the Admin token", 
   await expect(page.getByText("Total Users")).toHaveCount(0)
 });
 
-test("keeps mobile dashboard readable in light, dark and system themes", async ({ page }) => {
+test("keeps mobile dashboard readable in light and dark themes", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ colorScheme: "dark" })
   await mockAdmin(page)
@@ -135,9 +135,9 @@ test("keeps mobile dashboard readable in light, dark and system themes", async (
   await expect(page.getByRole("region", { name: "All-Time Revenue" })).toBeVisible()
   await page.getByText("Workspace", { exact: true }).click()
   await expect(page.getByRole("navigation", { name: "Mobile Admin navigation" })).toBeVisible()
-  const theme = page.getByLabel("Color theme")
-  for (const [option, appearance] of [["light", "light"], ["dark", "dark"], ["system", "dark"]]) {
-    await theme.selectOption(option)
+  const theme = page.getByRole("switch", { name: "Dark mode" })
+  for (const appearance of ["dark", "light"]) {
+    await theme.click()
     await expect(page.locator("html")).toHaveClass(new RegExp(`\\b${appearance}\\b`))
   }
   expect(await page.locator("html").evaluate((element) => element.scrollWidth <= window.innerWidth)).toBe(true)

@@ -8,7 +8,7 @@ import { CalendarDays, ChevronDown, HeartHandshake, LayoutDashboard, UserRound }
 import { authClient } from "@/lib/auth"
 import { bookingAccess } from "@/lib/bookings"
 import { UiIcon } from "@/components/ui/icon"
-import { ThemeSelect } from "@/components/ui/theme-select"
+import { DashboardAccountControls } from "@/components/ui/dashboard-account-controls"
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { BookingError } from "./shared"
 
@@ -41,7 +41,7 @@ function Gate({ children }: { children: ReactNode }) {
     <div className="vendor-content">
       <header className="vendor-topbar">
         <div className="vendor-crumb"><Link href="/customer/dashboard">Customer Dashboard</Link>{section && <strong>{section}</strong>}</div>
-        <span>{user.name}</span><ThemeSelect />
+        <span>{user.name}</span><DashboardAccountControls />
         <details className="vendor-mobile-links"><summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary><nav aria-label="Mobile customer navigation">{nav}<Link href="/services">Browse services</Link></nav></details>
       </header>
       <main id="customer-main" className="vendor-main">{children}</main>

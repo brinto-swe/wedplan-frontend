@@ -2,7 +2,7 @@
 
 import { UiIcon } from "@/components/ui/icon"
 import { LoadingLabel } from "@/components/ui/loading-label"
-import { ThemeSelect } from "@/components/ui/theme-select"
+import { DashboardAccountControls } from "@/components/ui/dashboard-account-controls"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
@@ -116,7 +116,7 @@ function VendorShell({ children }: { children: ReactNode }) {
           <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : navigation.find((item) => item.href === pathname)?.label}</strong></>}</div>
           <span>{profile.name}</span>
           <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
-          <ThemeSelect />
+          <DashboardAccountControls />
           <details className="vendor-mobile-links">
             <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>
             <nav aria-label="Mobile vendor navigation">
