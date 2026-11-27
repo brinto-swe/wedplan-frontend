@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
 import { serviceImageUrls } from "@/lib/service-image-urls"
+import { accountProfile, type AccountProfile } from "@/lib/profile"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const requiredText = (label: string, max: number) => z.string().trim()
@@ -26,14 +27,13 @@ const pageResponse = z.object({
   data: z.array(service),
   pagination: z.object({ totalPages: z.number().int().nonnegative().max(10_000) }),
 })
-const profileResponse = z.object({ id: z.string(), name: z.string(), role: z.string() })
 const errorResponse = z.object({
   issues: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
 })
 
 export type VendorService = z.infer<typeof service>
 export type ServiceInput = z.infer<typeof serviceInput>
-export type VendorProfile = z.infer<typeof profileResponse>
+export type VendorProfile = AccountProfile
 export type Plan = "Free" | "Premium" | "Unavailable"
 export const activeLimit = 3
 export const serviceIdPattern = /^[a-f0-9]{24}$/i
@@ -83,7 +83,7 @@ export async function vendorAccess(signal?: AbortSignal) {
       : status === 401 ? "Sign in to access the vendor workspace." : "Could not verify your session. Please try again.")
   }
 
-  const profile = profileResponse.parse(await (await request("/api/me", data.token, { signal })).json())
+  const profile = accountProfile.parse(await (await request("/api/me", data.token, { signal })).json())
   if (profile.role !== "vendor") throw new VendorApiError(403, "This workspace is for vendor accounts.")
   return { profile, token: data.token }
 }

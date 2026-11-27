@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
 import { serviceImageUrls } from "@/lib/service-image-urls"
+import { accountProfile } from "@/lib/profile"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const id = z.string().regex(/^[a-f0-9]{24}$/i)
@@ -23,7 +24,6 @@ const list = z.object({ data: z.array(record), pagination: z.object({ totalPages
 const listing = z.object({ data: z.object({
   title: z.string(), category: z.string(), vendorName: z.string().optional(), images: serviceImageUrls.optional(),
 }) })
-const profile = z.object({ id: z.string(), name: z.string(), email: z.string(), role: z.string() })
 const errorBody = z.object({ issues: z.array(z.object({ path: z.string(), message: z.string() })).optional() })
 export type Booking = z.infer<typeof record>
 export type BookingInput = z.infer<typeof bookingInput>
@@ -58,7 +58,7 @@ async function request(path: string, token: string, options: RequestInit = {}) {
 export async function bookingAccess(role: BookingRole, signal?: AbortSignal) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10000 } })
   if (!data?.token) throw new BookingApiError(error?.status ?? 401, error?.status === 403 ? "Your account cannot access bookings." : error?.status && error.status !== 401 ? "We couldn't verify your session." : "Sign in again to continue.")
-  const current = profile.parse(await request("/api/me", data.token, { signal }))
+  const current = accountProfile.parse(await request("/api/me", data.token, { signal }))
   if (current.role !== role) throw new BookingApiError(403, `This action requires a ${role} account.`)
   return { profile: current, token: data.token }
 }

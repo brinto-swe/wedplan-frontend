@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { CalendarDays, CircleCheck, Clock3 } from "lucide-react"
-import { authClient } from "@/lib/auth"
+import { useCustomerProfile } from "./workspace"
 import { VendorBanner, VendorStats } from "@/components/vendor/presentation"
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { BookingBadge, BookingError, eventDay, ServiceTitle, useBookings, useServiceInfo } from "./shared"
 
 export function CustomerDashboard() {
-  const user = authClient.useSession().data!.user
+  const user = useCustomerProfile()
   const query = useBookings("customer", user.id)
   const items = query.data ?? []
   const recent = [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 5)

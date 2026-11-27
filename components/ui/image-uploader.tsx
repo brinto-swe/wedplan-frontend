@@ -15,6 +15,7 @@ type ImageUploaderProps = {
   multiple?: boolean
   onUploadingChange?: (uploading: boolean) => void
   reorderable?: boolean
+  replaceOnUpload?: boolean
 }
 
 type Selection = {
@@ -33,7 +34,7 @@ function Preview({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} className="aspect-square w-full rounded-md bg-muted object-cover" />
 }
 
-export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true, onUploadingChange, reorderable = false }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true, onUploadingChange, reorderable = false, replaceOnUpload = false }: ImageUploaderProps) {
   const hintId = useId()
   const input = useRef<HTMLInputElement>(null)
   const active = useRef<AbortController | null>(null)
@@ -44,7 +45,9 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
   const limit = Math.max(0, Math.min(multiple ? 10 : 1, Number.isFinite(maxImages) ? Math.floor(maxImages) : 10))
-  const remaining = Math.max(0, limit - value.length - selections.length)
+  const replacing = replaceOnUpload && limit === 1
+  const remaining = Math.max(0, limit - (replacing ? 0 : value.length) - selections.length)
+  const chooseLabel = replacing && value.length ? "Replace image" : limit === 1 ? "Choose image" : "Choose images"
   const canSelect = !disabled && !busy && remaining > 0
 
   useEffect(() => { latest.current = { value, onChange } }, [value, onChange])
@@ -101,7 +104,7 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
         if (controller.signal.aborted) return
         const current = latest.current.value
         uploadedFiles.current.set(item.id, url)
-        if (!current.includes(url)) publish([...current, url])
+        if (!current.includes(url)) publish(replacing ? [url] : [...current, url])
         setSelections((rows) => rows.filter((row) => row.id !== item.id))
         release(item.preview)
       }
@@ -157,7 +160,7 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
       <input ref={input} type="file" accept={imageTypes.join(",")} multiple={multiple && limit > 1} hidden disabled={!canSelect}
         onChange={(event) => { select(Array.from(event.currentTarget.files ?? [])); event.currentTarget.value = "" }} />
       <Button type="button" variant="outline" disabled={!canSelect} aria-describedby={hintId} onClick={() => input.current?.click()}>
-        <Upload aria-hidden="true" />{limit === 1 ? "Choose image" : "Choose images"}
+        <Upload aria-hidden="true" />{chooseLabel}
       </Button>
       <p id={hintId} className="text-sm text-muted-foreground">Drop files here, or use the file picker. JPEG, PNG or WebP, up to 4 MiB each.</p>
       <p role="status" className="text-sm text-muted-foreground">{value.length} uploaded · {remaining} available</p>
