@@ -4,10 +4,10 @@ import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import { authClient, signInEmail, signUpEmail } from "@/lib/auth"
+import { authClient, fetchProtectedProfile, ProtectedProfileError, signInEmail, signUpEmail } from "@/lib/auth"
 import { billingReturn } from "@/lib/billing-navigation"
 import { bookingReturn } from "@/lib/booking-navigation"
-import { adminReturn } from "@/lib/admin-navigation"
+import { adminDashboardPath, adminReturn } from "@/lib/admin-navigation"
 
 export type AuthMode = "sign-in" | "sign-up"
 type Provider = "google" | "github"
@@ -37,6 +37,14 @@ function errorMessage(error: { code?: string; status?: number }, signup: boolean
   return signup ? "We couldn’t create your account. Please try again." : "We couldn’t sign you in. Please try again."
 }
 
+function postLoginPath(role: unknown, destination?: string) {
+  switch (role) {
+    case "admin": return adminReturn(destination) ?? adminDashboardPath
+    case "vendor": return billingReturn(destination) ?? "/vendor/dashboard"
+    case "customer": return bookingReturn(destination) ?? "/customer/dashboard"
+  }
+}
+
 const fields = {
   name: { label: "Full name", type: "text", autoComplete: "name", maxLength: 120 },
   email: { label: "Email address", type: "email", autoComplete: "email", maxLength: 254 },
@@ -53,21 +61,30 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
   const [error, setError] = useState("")
   const [showCallbackError, setShowCallbackError] = useState(oauthError || oauthReturn)
   const [success, setSuccess] = useState("")
-  const [confirmedRole, setConfirmedRole] = useState<string>()
+  const [confirmedUserId, setConfirmedUserId] = useState<string>()
+  const [profileError, setProfileError] = useState("")
+  const [profileAttempt, setProfileAttempt] = useState(0)
   const [showPasswords, setShowPasswords] = useState(false)
   const [passwordHelp, setPasswordHelp] = useState(false)
-  const authenticated = Boolean(session.data?.user)
-  const user = session.data?.user
-  const role = confirmedRole ?? (user && "role" in user ? user.role : undefined)
+  const userId = session.error ? undefined : session.data?.user.id ?? confirmedUserId
+  const authenticated = Boolean(userId)
 
   useEffect(() => {
-    if (pending || (!success && !authenticated)) return
-    const target = role === "vendor" ? billingReturn(destination) ?? "/vendor/dashboard"
-      : role === "customer" ? bookingReturn(destination) ?? "/customer/dashboard"
-        : role === "admin" ? adminReturn(destination) ?? "/services" : "/services"
-    const timer = window.setTimeout(() => router.replace(target), success || oauthReturn ? 1100 : 0)
-    return () => window.clearTimeout(timer)
-  }, [authenticated, destination, oauthReturn, pending, role, router, success])
+    if (pending || !userId) return
+    const controller = new AbortController()
+    void fetchProtectedProfile(controller.signal).then((profile) => {
+      if (controller.signal.aborted) return
+      const target = profile?.id === userId ? postLoginPath(profile.role, destination) : undefined
+      if (target) router.replace(target)
+      else setProfileError("We couldn’t verify your account role. Please try again.")
+    }).catch((error: unknown) => {
+      if (controller.signal.aborted) return
+      setProfileError(error instanceof ProtectedProfileError && error.status === 403
+        ? "We couldn’t sign you in with this account."
+        : "We couldn’t verify your account. Please try again.")
+    })
+    return () => controller.abort()
+  }, [destination, pending, profileAttempt, router, userId])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -102,13 +119,17 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
         return
       }
       const current = await authClient.getSession()
-      if (!current.data?.user) {
+      if (current.error || !current.data?.user) {
+        if (current.error?.status === 403) {
+          setError(errorMessage(current.error, signup))
+          return
+        }
         setError(signup
           ? "Your account was created, but we couldn’t start a session. Try signing in."
           : "We couldn’t confirm your session. Please try signing in again.")
         return
       }
-      if ("role" in current.data.user && typeof current.data.user.role === "string") setConfirmedRole(current.data.user.role)
+      setConfirmedUserId(current.data.user.id)
       setSuccess(signup ? "Your account is ready. Taking you to WedPlan…" : "Signed in. Taking you to WedPlan…")
     } catch {
       setError("We couldn’t reach WedPlan. Check your connection and try again.")
@@ -145,7 +166,16 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
     setPending(null)
   }
 
-  if (success || (authenticated && !pending)) {
+  if (!pending && (authenticated || success)) {
+    const accountError = profileError || (session.error ? errorMessage(session.error, signup) : "")
+    if (accountError) return <div className="account-actions">
+      <p className="account-feedback account-error" role="alert">{accountError}</p>
+      <Button type="button" variant="outline" onClick={() => {
+        setProfileError("")
+        if (session.error) void session.refetch()
+        setProfileAttempt((attempt) => attempt + 1)
+      }}>Try again</Button>
+    </div>
     return <p className="account-feedback account-success" role="status">
       {success || (oauthReturn ? "Signed in. Taking you to WedPlan…" : "You’re already signed in. Taking you to WedPlan…")}
     </p>
@@ -162,7 +192,9 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
 
   return (
     <div className="account-actions account-actions-reference" aria-busy={disabled}>
-      {(error || callbackMessage) && <p className="account-feedback account-error" role="alert">{error || callbackMessage}</p>}
+      {(error || callbackMessage || session.error?.status === 403) && <p className="account-feedback account-error" role="alert">
+        {error || (session.error?.status === 403 ? errorMessage(session.error, signup) : callbackMessage)}
+      </p>}
       {checkingCallback && <p role="status" className="account-note">Checking your session…</p>}
       <form method="post" onSubmit={submit} noValidate className="account-form">
         <fieldset disabled={disabled}>

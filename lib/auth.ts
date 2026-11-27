@@ -33,16 +33,23 @@ export function signInWithProvider(provider: "google" | "github") {
   })
 }
 
-export async function fetchProtectedProfile() {
-  const { data, error } = await authClient.token()
-  if (error || !data?.token) throw new Error("Sign in to request a bearer token.")
+export class ProtectedProfileError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message)
+  }
+}
+
+export async function fetchProtectedProfile(signal?: AbortSignal) {
+  const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
+  if (error || !data?.token) throw new ProtectedProfileError(error?.status ?? 401, "Sign in to request a bearer token.")
 
   const response = await fetch(new URL("/api/me", apiOrigin), {
     credentials: "omit",
     cache: "no-store",
     headers: { Authorization: `Bearer ${data.token}` },
+    signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
   })
-  if (!response.ok) throw new Error(`Protected profile returned HTTP ${response.status}.`)
+  if (!response.ok) throw new ProtectedProfileError(response.status, `Protected profile returned HTTP ${response.status}.`)
 
   return response.json() as Promise<{
     id: string
