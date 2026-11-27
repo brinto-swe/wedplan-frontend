@@ -10,6 +10,7 @@ const serviceSchema = z.object({
   price: z.number().nonnegative(),
   location: z.string(),
   vendorId: z.string(),
+  vendorName: z.string().optional(),
   images: serviceImageUrls.optional(),
   moderationStatus: moderationStatus.optional(),
   isActive: z.boolean().optional(),
@@ -19,7 +20,7 @@ function isPublicService(service: z.infer<typeof serviceSchema>) {
   return service.isActive === true && service.moderationStatus === "approved"
 }
 
-export type Service = z.infer<typeof serviceSchema> & { vendorName?: string; demo?: true }
+export type Service = z.infer<typeof serviceSchema> & { demo?: true }
 export const serviceSortLabels = {
   newest: "Newest",
   "price-asc": "Price: Low to High",
@@ -37,7 +38,12 @@ const listSchema = z.object({
 const detailSchema = z.object({ data: serviceSchema })
 type ServiceList = Omit<z.infer<typeof listSchema>, "data"> & { data: Service[]; demo: boolean }
 
-export const categories = [
+export const categoryNames = [
+  "Photography & Videography", "Wedding Venues", "Decoration & Florist",
+  "Catering Services", "Makeup & Styling", "Wedding Fashion",
+] as const
+
+const categories = [
   { name: "Venues", image: "/weddings/venues.webp", alt: "Garden ceremony at a historic villa" },
   { name: "Photography", image: "/weddings/photography.webp", alt: "Newlyweds on a stone staircase" },
   { name: "Florals", image: "/weddings/florals.webp", alt: "Garden roses and hydrangeas arranged for a wedding" },
@@ -45,7 +51,8 @@ export const categories = [
 ]
 
 export function serviceImages(category: string, images?: readonly string[], title = "Service") {
-  const image = categories.find((item) => category.toLowerCase().includes(item.name.toLowerCase().replace(/s$/, "")))
+  const categoryKey = category === "Decoration & Florist" ? "Florals" : category
+  const image = categories.find((item) => categoryKey.toLowerCase().includes(item.name.toLowerCase().replace(/s$/, "")))
     ?? { image: "/weddings/hero.webp", alt: "An outdoor wedding reception at a stone villa" }
   if (images?.length) return [...new Set(images)].map((url, index) => ({
     image: url, alt: `${title}, image ${index + 1}`, fallback: image.image,
@@ -96,14 +103,18 @@ async function request(path: string, token?: string, signal?: AbortSignal) {
   })
 }
 
-export async function listServices(filters: Filters, limit = 9): Promise<ServiceList> {
+export async function listLiveServices(filters: Filters, limit = 9): Promise<ServiceList> {
   const params = queryParams(filters)
   params.set("limit", String(limit))
+  const response = await request(`/api/services?${params}`)
+  if (!response.ok) throw new Error("Service catalog unavailable")
+  const result = listSchema.parse(await response.json())
+  return { ...result, data: result.data.filter(isPublicService), demo: false }
+}
+
+export async function listServices(filters: Filters, limit = 9): Promise<ServiceList> {
   try {
-    const response = await request(`/api/services?${params}`)
-    if (!response.ok) throw new Error("Service catalog unavailable")
-    const result = listSchema.parse(await response.json())
-    return { ...result, data: result.data.filter(isPublicService), demo: false }
+    return await listLiveServices(filters, limit)
   } catch {
     const data = demos.filter((item) =>
       (!filters.category || item.category.toLowerCase() === filters.category.toLowerCase()) &&

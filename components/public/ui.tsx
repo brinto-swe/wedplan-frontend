@@ -22,7 +22,7 @@ export function SearchForm({ filters, hero = false }: { filters?: Filters; hero?
   )
 }
 
-export function ServiceCard({ service }: { service: Service }) {
+export function ServiceCard({ service, featured = false }: { service: Service; featured?: boolean }) {
   const [image] = serviceImages(service.category, service.images, service.title)
   return (
     <article className="wp-card">
@@ -32,7 +32,9 @@ export function ServiceCard({ service }: { service: Service }) {
           <p className="wp-kicker">{service.category}</p>
           <h3>{service.title}</h3>
           <p className="wp-location"><UiIcon icon={MapPin} size="sm" />{service.location}</p>
+          {featured && <p className="wp-location">{service.vendorName ?? "Vendor information unavailable"}</p>}
           <p className="wp-price">From <strong>{formattedPrice(service)}</strong></p>
+          {featured && <span className="wp-text-link">View details</span>}
         </div>
       </Link>
     </article>

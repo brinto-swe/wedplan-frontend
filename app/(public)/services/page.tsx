@@ -6,7 +6,7 @@ import { RetryButton } from "@/components/public/retry-button"
 import { ServiceSortControl } from "@/components/public/service-sort"
 import type { Metadata } from "next"
 import { ActionLink, DemoNotice, EmptyState, ServiceCard } from "@/components/public/ui"
-import { browseUrl, categories, listServices, parseFilters } from "@/lib/services"
+import { browseUrl, categoryNames, listServices, parseFilters } from "@/lib/services"
 
 export const metadata: Metadata = { title: "Browse wedding services" }
 
@@ -22,7 +22,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
       <Form key={browseUrl(filters)} action="/services" id="directory-filters" className="wp-filter-rail">
         <div><h2>Filters</h2><Link className="wp-text-link" href="/services">Clear all</Link></div>
         <label>Category<input name="category" defaultValue={filters.category} maxLength={80} list="directory-categories" placeholder="All categories" /></label>
-        <datalist id="directory-categories">{categories.map(({ name }) => <option key={name} value={name} />)}</datalist>
+        <datalist id="directory-categories">{categoryNames.map((name) => <option key={name} value={name} />)}</datalist>
         <label>Location<input name="location" defaultValue={filters.location} maxLength={120} placeholder="City or region" /></label>
         <button className="wp-button" type="submit">Apply filters</button>
       </Form>
