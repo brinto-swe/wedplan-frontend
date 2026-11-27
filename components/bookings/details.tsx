@@ -36,7 +36,7 @@ export function BookingDetails({ role, userId, id, close }: { role: BookingRole;
   return <section className="vendor-card booking-detail">
     <div className="vendor-section-head"><h2>Booking Details</h2>{close ? <button className="wp-button wp-button-outline" type="button" onClick={close}>Close</button> : <Link className="wp-text-link" href="/customer/bookings">My Bookings</Link>}</div>
     {query.isPending ? <LoadingLabel>Loading booking details…</LoadingLabel> : query.isError ? <BookingError error={query.error} retry={() => void query.refetch()} /> : booking && <>
-      <div className="booking-summary"><ServiceTitle booking={booking} service={info.get(booking.serviceId)} /><BookingBadge status={booking.status} /></div>
+      <div className="booking-summary"><ServiceTitle booking={booking} service={info.get(booking.serviceId)} showImage={role === "customer"} /><BookingBadge status={booking.status} /></div>
       <h3>Event Information</h3>
       <dl><dt>Event date</dt><dd>{eventDay(booking.eventDate)}</dd><dt>Location</dt><dd>{booking.eventLocation}</dd><dt>Created</dt><dd>{eventDay(booking.createdAt)}</dd></dl>
       <h3>Customer Contact</h3><p>{booking.customerContact.name}</p><p>{booking.customerContact.email}</p><p>{booking.customerContact.phone}</p>

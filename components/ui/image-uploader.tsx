@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type DragEvent } from "react"
-import { Upload } from "lucide-react"
+import { ArrowLeft, ArrowRight, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { imageTypes, maxImageBytes, uploadImage } from "@/lib/image-uploads"
 import { Button } from "./button"
@@ -13,6 +13,8 @@ type ImageUploaderProps = {
   maxImages?: number
   disabled?: boolean
   multiple?: boolean
+  onUploadingChange?: (uploading: boolean) => void
+  reorderable?: boolean
 }
 
 type Selection = {
@@ -31,7 +33,7 @@ function Preview({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} className="aspect-square w-full rounded-md bg-muted object-cover" />
 }
 
-export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true, onUploadingChange, reorderable = false }: ImageUploaderProps) {
   const hintId = useId()
   const input = useRef<HTMLInputElement>(null)
   const active = useRef<AbortController | null>(null)
@@ -66,11 +68,20 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
     latest.current.onChange(urls)
   }
 
+  function move(index: number, direction: -1 | 1) {
+    const reordered = [...value]
+    const next = index + direction
+    reordered[index] = value[next]
+    reordered[next] = value[index]
+    publish(reordered)
+  }
+
   async function upload(files: Selection[]) {
     if (disabled || active.current || files.length === 0) return
     const controller = new AbortController()
     active.current = controller
     setBusy(true)
+    onUploadingChange?.(true)
     try {
       for (const item of files) {
         if (controller.signal.aborted) return
@@ -98,6 +109,7 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
       if (active.current === controller) {
         active.current = null
         setBusy(false)
+        onUploadingChange?.(false)
       }
     }
   }
@@ -153,7 +165,13 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
     {(value.length > 0 || selections.length > 0) && <ul aria-label="Image previews" className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {value.map((url, index) => <li key={url} className="grid min-w-0 gap-2 rounded-xl border bg-card p-2">
         <Preview src={url} alt={`Uploaded image ${index + 1}`} />
-        <p className="text-sm">Uploaded</p>
+        <p className="text-sm">{reorderable && index === 0 ? "Cover image" : "Uploaded"}</p>
+        {reorderable && value.length > 1 && <div className="flex flex-wrap gap-1">
+          <Button type="button" variant="outline" size="icon-sm" disabled={disabled || busy || index === 0}
+            aria-label={`Move image ${index + 1} earlier`} onClick={() => move(index, -1)}><ArrowLeft aria-hidden="true" /></Button>
+          <Button type="button" variant="outline" size="icon-sm" disabled={disabled || busy || index === value.length - 1}
+            aria-label={`Move image ${index + 1} later`} onClick={() => move(index, 1)}><ArrowRight aria-hidden="true" /></Button>
+        </div>}
         <Button type="button" variant="outline" disabled={disabled || busy} aria-label={`Remove uploaded image ${index + 1}`}
           onClick={() => publish(value.filter((_, position) => position !== index))}>Remove</Button>
       </li>)}

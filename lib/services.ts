@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { serviceImageUrls } from "@/lib/service-image-urls"
 
 const serviceSchema = z.object({
   id: z.string().min(1),
@@ -8,6 +9,7 @@ const serviceSchema = z.object({
   price: z.number().nonnegative(),
   location: z.string(),
   vendorId: z.string(),
+  images: serviceImageUrls.optional(),
 })
 
 export type Service = z.infer<typeof serviceSchema> & { vendorName?: string; demo?: true }
@@ -29,10 +31,14 @@ export const categories = [
   { name: "Catering", image: "/weddings/catering.webp", alt: "Champagne and porcelain on a reception table" },
 ]
 
-export function serviceImages(category: string) {
+export function serviceImages(category: string, images?: readonly string[], title = "Service") {
   const image = categories.find((item) => category.toLowerCase().includes(item.name.toLowerCase().replace(/s$/, "")))
     ?? { image: "/weddings/hero.webp", alt: "An outdoor wedding reception at a stone villa" }
+  if (images?.length) return [...new Set(images)].map((url, index) => ({
+    image: url, alt: `${title}, image ${index + 1}`, fallback: image.image,
+  }))
   return [image, ...categories.filter((item) => item.image !== image.image).slice(0, 2)]
+    .map((item) => ({ image: item.image, alt: item.alt, fallback: item.image }))
 }
 
 const demos: Service[] = [

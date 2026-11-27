@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
+import { serviceImageUrls } from "@/lib/service-image-urls"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const id = z.string().regex(/^[a-f0-9]{24}$/i)
@@ -19,7 +20,9 @@ const record = base.extend({
   id, customerId: z.string(), vendorId: z.string(), status: z.enum(statuses), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 })
 const list = z.object({ data: z.array(record), pagination: z.object({ totalPages: z.number().int().min(0).max(10000) }) })
-const listing = z.object({ data: z.object({ title: z.string(), category: z.string(), vendorName: z.string().optional() }) })
+const listing = z.object({ data: z.object({
+  title: z.string(), category: z.string(), vendorName: z.string().optional(), images: serviceImageUrls.optional(),
+}) })
 const profile = z.object({ id: z.string(), name: z.string(), email: z.string(), role: z.string() })
 const errorBody = z.object({ issues: z.array(z.object({ path: z.string(), message: z.string() })).optional() })
 export type Booking = z.infer<typeof record>

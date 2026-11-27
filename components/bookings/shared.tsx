@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { BookingApiError, bookingService, listBookings, type Booking, type BookingRole, type ServiceInfo } from "@/lib/bookings"
+import { serviceImages } from "@/lib/services"
+import { ServicePhoto } from "@/components/public/service-photo"
 
 export const bookingKey = (role: BookingRole, userId: string) => ["bookings", role, userId]
 export const detailKey = (role: BookingRole, userId: string, id: string) => [...bookingKey(role, userId), id]
@@ -35,7 +37,13 @@ export function BookingError({ error, retry }: { error: unknown; retry?: () => v
 
 export const eventDay = (date: string) => new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(date))
 
-export function ServiceTitle({ booking, service }: { booking: Booking; service?: ServiceInfo | null }) {
-  return <><strong>{service?.title ?? "Service listing unavailable"}</strong>
+export function ServiceTitle({ booking, service, showImage = false }: { booking: Booking; service?: ServiceInfo | null; showImage?: boolean }) {
+  const text = <><strong>{service?.title ?? "Service listing unavailable"}</strong>
     <p>{service?.vendorName ?? `Vendor reference ${booking.vendorId}`}</p></>
+  if (!showImage) return text
+  const [cover] = serviceImages(service?.category ?? "", service?.images)
+  return <div className="flex min-w-0 items-center gap-3">
+    <ServicePhoto src={cover.image} fallback={cover.fallback} alt="" width={70} height={43} className="h-[43px] w-[70px] shrink-0 rounded object-cover" />
+    <div>{text}</div>
+  </div>
 }

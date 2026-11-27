@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { authClient } from "@/lib/auth"
+import { serviceImageUrls } from "@/lib/service-image-urls"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const requiredText = (label: string, max: number) => z.string().trim()
@@ -14,7 +15,9 @@ export const serviceInput = z.object({
   price: z.number({ error: "Enter a valid price." }).min(0, "Price must be zero or more.").max(1_000_000_000, "Price is too high."),
   location: requiredText("Location", 120),
   isActive: z.boolean(),
+  images: serviceImageUrls.optional(),
 })
+export const createServiceInput = serviceInput.extend({ images: serviceImageUrls.min(1, "Upload at least one service image.") })
 const service = serviceInput.extend({
   id: z.string(), vendorId: z.string(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 })
@@ -119,7 +122,7 @@ export async function getVendorService(id: string, signal?: AbortSignal) {
 export async function saveVendorService(values: ServiceInput, id?: string) {
   const { token } = await vendorAccess()
   const response = await request(id ? `/api/services/${encodeURIComponent(id)}` : "/api/services", token, {
-    method: id ? "PATCH" : "POST", body: JSON.stringify(serviceInput.parse(values)),
+    method: id ? "PATCH" : "POST", body: JSON.stringify((id ? serviceInput : createServiceInput).parse(values)),
   })
   return detailResponse.parse(await response.json()).data
 }

@@ -1,12 +1,13 @@
 "use client"
 
 import { UiIcon } from "@/components/ui/icon"
+import { ImageUploader } from "@/components/ui/image-uploader"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState, type FormEvent } from "react"
 import { Check, ImageIcon } from "lucide-react"
-import { getVendorService, saveVendorService, serviceInput, VendorApiError, type VendorService } from "@/lib/vendor-services"
+import { createServiceInput, getVendorService, saveVendorService, serviceInput, VendorApiError, type VendorService } from "@/lib/vendor-services"
 import { LoadingState, RequestError, useVendor, vendorServicesKey } from "./workspace"
 
 import { VendorBanner } from "./presentation"
@@ -17,6 +18,8 @@ function EditorForm({ service }: { service?: VendorService }) {
   const client = useQueryClient()
   const [issues, setIssues] = useState<Record<string, string>>({})
   const [saved, setSaved] = useState(false)
+  const [images, setImages] = useState(service?.images ?? [])
+  const [uploading, setUploading] = useState(false)
   const mutation = useMutation({
     mutationFn: (values: Parameters<typeof saveVendorService>[0]) => saveVendorService(values, service?.id),
     onSuccess: (result) => {
@@ -29,13 +32,13 @@ function EditorForm({ service }: { service?: VendorService }) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (mutation.isPending || saved) return
+    if (mutation.isPending || saved || uploading) return
     mutation.reset()
     const values = new FormData(event.currentTarget)
     const price = String(values.get("price") ?? "").trim()
-    const parsed = serviceInput.safeParse({
+    const parsed = (service ? serviceInput : createServiceInput).safeParse({
       title: values.get("title"), category: values.get("category"), description: values.get("description"),
-      location: values.get("location"), price: price ? Number(price) : NaN, isActive: values.get("status") === "active",
+      location: values.get("location"), price: price ? Number(price) : NaN, isActive: values.get("status") === "active", images,
     })
     if (!parsed.success) {
       const errors: Record<string, string> = {}
@@ -64,7 +67,19 @@ function EditorForm({ service }: { service?: VendorService }) {
         <label>Price<input name="price" defaultValue={service?.price} type="number" inputMode="decimal" min={0} max={1_000_000_000} step="any" required {...invalid("price")} />{fieldError("price")}</label>
         <label className="vendor-field-wide">Description<textarea name="description" defaultValue={service?.description} rows={6} maxLength={5000} placeholder="Describe what’s included, the service duration, and any requirements." required {...invalid("description")} />{fieldError("description")}</label>
       </div>
-      <div className="vendor-media"><UiIcon icon={ImageIcon} size="lg" /><div><h3>Service images</h3><p>Image uploads are unavailable for service listings. You can save your listing and add photos when uploads are supported.</p></div></div>
+      <section className="mt-4 grid gap-2" aria-labelledby="service-images-title">
+        <h3 id="service-images-title" className="flex items-center gap-2"><UiIcon icon={ImageIcon} size="sm" />Service images</h3>
+        <p className="text-sm text-muted-foreground">{service ? "The first image is your listing cover." : "Upload at least one image. The first image is your listing cover."}</p>
+        <ImageUploader value={images} onChange={(urls) => {
+          setImages(urls)
+          setIssues((current) => {
+            const next = { ...current }
+            delete next.images
+            return next
+          })
+        }} onUploadingChange={setUploading} disabled={mutation.isPending || saved} reorderable />
+        {fieldError("images")}
+      </section>
     </fieldset>
     <aside className="vendor-editor-aside"><fieldset disabled={mutation.isPending || saved} className="vendor-card vendor-status"><legend>Service Status</legend>
       <label><input type="radio" name="status" value="active" defaultChecked={service?.isActive === true} />Publish as active</label><p>Visible in the public directory. Active service limits apply.</p>
@@ -76,8 +91,8 @@ function EditorForm({ service }: { service?: VendorService }) {
       {error instanceof VendorApiError && error.status === 401 && <Link href="/sign-in">Sign in</Link>}
     </div>}
     <div className="vendor-actions">
-      <button className="wp-button" type="submit" disabled={mutation.isPending || saved}>
-        {saved ? "Saved" : mutation.isPending ? "Saving…" : service ? "Save changes" : "Create service"}
+      <button className="wp-button" type="submit" disabled={mutation.isPending || saved || uploading}>
+        {saved ? "Saved" : mutation.isPending ? "Saving…" : uploading ? "Uploading images…" : service ? "Save changes" : "Create service"}
       </button>
       <Link className="wp-button wp-button-outline" href="/vendor/services">Cancel</Link>
     </div>

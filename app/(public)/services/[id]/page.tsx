@@ -29,7 +29,7 @@ export default async function ServicePage({ params, searchParams }: { params: Pr
       <nav className="wp-breadcrumb" aria-label="Breadcrumb"><Link href="/services">Browse services</Link><UiIcon icon={ChevronRight} size="sm" /><span>{service.category}</span></nav>
       {service.demo && <DemoNotice />}
       <div className="wp-detail-grid wp-detail-reference">
-      <Gallery key={id} images={serviceImages(service.category)} />
+      <Gallery key={id} images={serviceImages(service.category, service.images, service.title)} />
       <div className="wp-page-heading wp-detail-heading">
         <p className="wp-kicker">{service.category}</p><h1>{service.title}</h1>
         <p className="wp-location"><UiIcon icon={MapPin} size="md" />{service.location}</p>

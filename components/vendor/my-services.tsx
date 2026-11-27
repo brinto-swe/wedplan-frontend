@@ -1,7 +1,7 @@
 "use client"
 
 import { UiIcon } from "@/components/ui/icon"
-import Image from "next/image"
+import { ServicePhoto } from "@/components/public/service-photo"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -92,7 +92,8 @@ export function MyServices() {
           <div className="vendor-table-wrap"><table className="vendor-table">
             <thead><tr><th scope="col">Service</th><th scope="col">Category</th><th scope="col">Price</th><th scope="col">Status</th><th scope="col">Created</th><th scope="col">Actions</th></tr></thead>
             <tbody>{visible.map((item) => <tr key={item.id}>
-              <td><div className="vendor-service-cell"><Image src={serviceImages(item.category)[0].image} alt="" width={70} height={43} /><div><strong>{item.title}</strong><span>{item.location}</span></div></div></td>
+              <td><div className="vendor-service-cell"><ServicePhoto src={item.images?.[0] ?? serviceImages(item.category)[0].image}
+                fallback={serviceImages(item.category)[0].image} alt="" width={70} height={43} /><div><strong>{item.title}</strong><span>{item.location}</span></div></div></td>
               <td><span className="vendor-badge">{item.category}</span></td><td>{formatPrice.format(item.price)}</td>
               <td><span className={`vendor-badge ${item.isActive ? "vendor-active" : ""}`}>{item.isActive ? "Active" : "Inactive"}</span></td>
               <td><time dateTime={item.createdAt}>{new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.createdAt))}</time></td><td><div className="vendor-row-actions">

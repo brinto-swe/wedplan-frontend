@@ -2,16 +2,12 @@
 
 import { z } from "zod"
 import { apiOrigin, authClient } from "@/lib/auth"
+import { hostedImageUrl } from "@/lib/service-image-urls"
 
 export const maxImageBytes = 4 * 1024 * 1024
 export const imageTypes = ["image/jpeg", "image/png", "image/webp"] as const
-const imageUrl = z.string().refine((value) => {
-  const url = URL.parse(value)
-  return url?.protocol === "https:" && url.host === "i.ibb.co" &&
-    !url.username && !url.password && !url.search && !url.hash && url.pathname !== "/"
-})
 const uploadResult = z.object({
-  data: z.tuple([z.object({ url: imageUrl, displayUrl: imageUrl.optional() })]),
+  data: z.tuple([z.object({ url: hostedImageUrl, displayUrl: hostedImageUrl.optional() })]),
 })
 const messages: Record<number, string> = {
   400: "Select one image and try again.",
