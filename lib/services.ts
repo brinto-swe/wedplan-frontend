@@ -20,7 +20,13 @@ function isPublicService(service: z.infer<typeof serviceSchema>) {
 }
 
 export type Service = z.infer<typeof serviceSchema> & { vendorName?: string; demo?: true }
-export type Filters = { q?: string; category?: string; location?: string; page: number }
+export const serviceSortLabels = {
+  newest: "Newest",
+  "price-asc": "Price: Low to High",
+  "price-desc": "Price: High to Low",
+} as const
+export type ServiceSort = keyof typeof serviceSortLabels
+export type Filters = { q?: string; category?: string; location?: string; sort?: ServiceSort; page: number }
 
 const listSchema = z.object({
   data: z.array(serviceSchema),
@@ -60,6 +66,7 @@ function queryParams(filters: Filters) {
   for (const key of ["q", "category", "location"] as const) {
     if (filters[key]) params.set(key, filters[key])
   }
+  if (filters.sort && filters.sort !== "newest") params.set("sort", filters.sort)
   if (filters.page > 1) params.set("page", String(filters.page))
   return params
 }
@@ -69,14 +76,15 @@ export function browseUrl(filters: Filters) {
   return query ? `/services?${query}` : "/services"
 }
 
-export function parseFilters(query: Record<string, string | string[] | undefined>): Filters {
+export function parseFilters(query: Record<string, string | string[] | undefined>) {
   const field = (name: string, max: number) => {
     const value = query[name]
     return typeof value === "string" ? value.trim().slice(0, max) || undefined : undefined
   }
   const rawPage = query.page
   const page = typeof rawPage === "string" && /^[1-9]\d{0,4}$/.test(rawPage) ? Math.min(Number(rawPage), 10_000) : 1
-  return { q: field("q", 120), category: field("category", 80), location: field("location", 120), page }
+  const sort = query.sort === "price-asc" || query.sort === "price-desc" ? query.sort : "newest"
+  return { q: field("q", 120), category: field("category", 80), location: field("location", 120), page, sort } satisfies Filters
 }
 
 async function request(path: string, token?: string, signal?: AbortSignal) {
@@ -102,6 +110,8 @@ export async function listServices(filters: Filters, limit = 9): Promise<Service
       (!filters.location || item.location.toLowerCase() === filters.location.toLowerCase()) &&
       (!filters.q || [item.title, item.description].some((text) => text.toLowerCase().includes(filters.q!.toLowerCase())))
     )
+    if (filters.sort === "price-asc") data.sort((first, second) => first.price - second.price)
+    if (filters.sort === "price-desc") data.sort((first, second) => second.price - first.price)
     const offset = (filters.page - 1) * limit
     return { data: data.slice(offset, offset + limit), demo: true,
       pagination: { page: filters.page, limit, total: data.length, totalPages: Math.ceil(data.length / limit) } }
