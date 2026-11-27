@@ -14,9 +14,12 @@ const credentials = z.object({
   email: z.string().trim().max(254, "Email is too long.").pipe(z.email("Enter a valid email address.")),
   password: z.string().min(1, "Enter your password.").max(128, "Use no more than 128 characters."),
 })
+const signupPasswordHelp = "Use at least 6 characters, including an uppercase (A–Z) and a lowercase (a–z) letter."
+
 const registration = credentials.extend({
   name: z.string().trim().min(1, "Enter your full name.").max(120, "Use no more than 120 characters."),
-  password: credentials.shape.password.min(8, "Use at least 8 characters."),
+  password: credentials.shape.password.min(6, signupPasswordHelp)
+    .regex(/[A-Z]/, signupPasswordHelp).regex(/[a-z]/, signupPasswordHelp),
   confirmPassword: z.string().min(1, "Confirm your password."),
   role: z.enum(["customer", "vendor"], { error: "Choose Customer or Vendor." }),
 }).refine(({ password, confirmPassword }) => password === confirmPassword, {
@@ -29,6 +32,7 @@ function errorMessage(error: { code?: string; status?: number }, signup: boolean
     return "That email or password didn’t match. Please try again."
   }
   if (error.status === 403) return "We couldn’t sign you in with this account."
+  if (signup && error.code === "SIGNUP_PASSWORD_REQUIREMENTS") return signupPasswordHelp
   if (signup && (error.code === "USER_ALREADY_EXISTS" || error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")) {
     return "An account already exists for this email. Try signing in."
   }
@@ -198,7 +202,7 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
                   id={field} name={field} required aria-invalid={Boolean(issues[field])}
                   aria-describedby={issues[field] ? `${field}-error` : signup && field === "password" ? "password-hint" : undefined} />
                 {issues[field] ? <p className="account-field-error" id={`${field}-error`}>{issues[field]}</p>
-                  : signup && field === "password" && <p id="password-hint" className="account-note">At least 8 characters</p>}
+                  : signup && field === "password" && <p id="password-hint" className="account-note">{signupPasswordHelp}</p>}
               </div>
             })}
             {signup && <div className="account-field account-field-wide">
