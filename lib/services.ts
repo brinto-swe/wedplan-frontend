@@ -11,6 +11,7 @@ const serviceSchema = z.object({
   location: z.string(),
   vendorId: z.string(),
   vendorName: z.string().optional(),
+  vendorPremium: z.boolean().optional(),
   images: serviceImageUrls.optional(),
   moderationStatus: moderationStatus.optional(),
   isActive: z.boolean().optional(),

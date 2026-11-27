@@ -241,3 +241,14 @@
   .wp-home-entrance { transform: none !important; }
   .wp-featured .wp-card img { transition: none; transform: none; }
 }
+
+.wp-premium-vendor {
+  display: inline-block;
+  margin-block: 6px 2px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--link);
+  font-size: .75rem;
+  font-weight: 650;
+}

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { BookingApiError, bookingService, listBookings, type Booking, type BookingRole, type ServiceInfo } from "@/lib/bookings"
 import { serviceImages } from "@/lib/services"
+import { PremiumVendorBadge } from "@/components/public/ui"
 import { ServicePhoto } from "@/components/public/service-photo"
 
 export const bookingKey = (role: BookingRole, userId: string) => ["bookings", role, userId]
@@ -39,7 +40,8 @@ export const eventDay = (date: string) => new Intl.DateTimeFormat("en", { dateSt
 
 export function ServiceTitle({ booking, service, showImage = false }: { booking: Booking; service?: ServiceInfo | null; showImage?: boolean }) {
   const text = <><strong>{service?.title ?? "Service listing unavailable"}</strong>
-    <p>{service?.vendorName ?? `Vendor reference ${booking.vendorId}`}</p></>
+    <p>{service?.vendorName ?? `Vendor reference ${booking.vendorId}`}</p>
+    <PremiumVendorBadge premium={service?.vendorPremium} /></>
   if (!showImage) return text
   const [cover] = serviceImages(service?.category ?? "", service?.images)
   return <div className="flex min-w-0 items-center gap-3">

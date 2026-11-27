@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { BookingRequest } from "@/components/bookings/request-form"
 import { Gallery } from "@/components/public/gallery"
-import { ActionLink, DemoNotice, EmptyState } from "@/components/public/ui"
+import { ActionLink, DemoNotice, EmptyState, PremiumVendorBadge } from "@/components/public/ui"
 import { UiIcon } from "@/components/ui/icon"
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { authClient, fetchProtectedProfile, getProtectedToken, ProtectedProfileError } from "@/lib/auth"
@@ -73,6 +73,7 @@ function PrivateService({ id, autoOpen }: { id: string; autoOpen: boolean }) {
           <section className="wp-detail-copy"><h2>About this service</h2><p>{service.description}</p></section>
           <section className="wp-detail-copy"><h2>Vendor information</h2>
             {service.vendorName ? <p>{service.vendorName}</p> : <p className="wp-vendor-id">Vendor reference {service.vendorId}</p>}
+            <PremiumVendorBadge premium={service.vendorPremium} />
             <p>Service location: {service.location}</p>
           </section>
         </div>

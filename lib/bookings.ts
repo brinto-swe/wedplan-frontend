@@ -22,7 +22,7 @@ const record = base.extend({
 })
 const list = z.object({ data: z.array(record), pagination: z.object({ totalPages: z.number().int().min(0).max(10000) }) })
 const listing = z.object({ data: z.object({
-  title: z.string(), category: z.string(), vendorName: z.string().optional(), images: serviceImageUrls.optional(),
+  title: z.string(), category: z.string(), vendorName: z.string().optional(), vendorPremium: z.boolean().optional(), images: serviceImageUrls.optional(),
 }) })
 const errorBody = z.object({ issues: z.array(z.object({ path: z.string(), message: z.string() })).optional() })
 export type Booking = z.infer<typeof record>

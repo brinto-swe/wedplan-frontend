@@ -22,6 +22,10 @@ export function SearchForm({ filters, hero = false }: { filters?: Filters; hero?
   )
 }
 
+export function PremiumVendorBadge({ premium }: { premium?: boolean }) {
+  return premium === true ? <span className="wp-premium-vendor">Premium Vendor</span> : null
+}
+
 export function ServiceCard({ service, featured = false }: { service: Service; featured?: boolean }) {
   const [image] = serviceImages(service.category, service.images, service.title)
   return (
@@ -33,6 +37,7 @@ export function ServiceCard({ service, featured = false }: { service: Service; f
           <h3>{service.title}</h3>
           <p className="wp-location"><UiIcon icon={MapPin} size="sm" />{service.location}</p>
           {featured && <p className="wp-location">{service.vendorName ?? "Vendor information unavailable"}</p>}
+          <PremiumVendorBadge premium={service.vendorPremium} />
           <p className="wp-price">From <strong>{formattedPrice(service)}</strong></p>
           {featured && <span className="wp-text-link">View details</span>}
         </div>

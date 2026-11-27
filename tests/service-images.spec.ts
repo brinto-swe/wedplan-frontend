@@ -175,6 +175,22 @@ test("public pages and authenticated details show actual covers, photo selection
   await expect(page.locator(".wp-gallery-main img")).toHaveAttribute("src", /photography.webp/)
 })
 
+test("Premium Vendor badges match the API on Home, Browse, and Service Details", async ({ page }) => {
+  await mockCatalogueSession(page, true)
+  const origin = "http://127.0.0.1:3195"
+  const badge = (name: string) => page.getByRole("article").filter({ hasText: name }).getByText("Premium Vendor", { exact: true })
+  for (const path of ["/catalogue", "/services"]) {
+    await page.goto(origin + path)
+    await expect(badge(service.title)).toBeVisible()
+    await expect(badge(legacy.title)).toHaveCount(0)
+  }
+  await page.goto(`${origin}/services/${service.id}`)
+  await expect(page.getByText("Premium Vendor", { exact: true })).toBeVisible()
+  await page.goto(`${origin}/services/${legacy.id}`)
+  await expect(page.getByRole("heading", { name: legacy.title })).toBeVisible()
+  await expect(page.getByText("Premium Vendor", { exact: true })).toHaveCount(0)
+})
+
 test("Customer booking summaries use the listing cover", async ({ page }) => {
   const user = { id: legacy.id, role: "customer", name: "Fixture Customer", email: "customer@example.test" }
   const booking = {
