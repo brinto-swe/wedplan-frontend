@@ -10,6 +10,7 @@ const fixtures: AdminTransaction[] = Array.from({ length: 9 }, (_, index) => ({
   vendor: index === 0 ? { id: vendorId, name: "Test Vendor", businessName: "Fixture Studio" } : null,
   amount: 1234, amountUnit: "minor", currency: index === 0 ? "jpy" : "usd",
   status: index === 0 ? "failed" : "paid", type: "subscription",
+  plan: index === 0 ? "premium" : index === 1 ? null : undefined,
   createdAt: index === 0 ? "2025-01-05T23:59:00.000Z" : "2025-01-04T12:00:00.000Z",
   dateBasis: "stripe_invoice_event",
 }))
@@ -61,6 +62,14 @@ test("shows the read-only invoice ledger, exact currency scales, details and pag
   await setup(page)
   await page.goto(path)
   await expect(page.getByRole("link", { name: "Transactions" })).toHaveAttribute("aria-current", "page")
+  const first = page.getByRole("row").filter({ hasText: "in_Fixture1" })
+  await expect(first.getByRole("cell", { name: "Premium", exact: true })).toBeVisible()
+  await expect(first.getByRole("cell", { name: "Failed", exact: true })).toBeVisible()
+  await expect(first.locator("time")).toHaveAttribute("datetime", fixtures[0].createdAt)
+  await expect(first.locator("time")).toContainText("UTC")
+  const legacy = page.getByRole("row").filter({ hasText: "in_Fixture2" })
+  await expect(legacy.getByRole("cell", { name: "Not recorded", exact: true })).toBeVisible()
+  await expect(legacy.getByRole("cell", { name: "Paid", exact: true })).toBeVisible()
   await expect(page.getByText(/JPY\s+1,234/)).toBeVisible()
   await expect(page.getByText(/USD\s+12\.34/)).toHaveCount(7)
   await expect(page.getByText("9 invoices · Page 1 of 2")).toBeVisible()
@@ -69,6 +78,7 @@ test("shows the read-only invoice ledger, exact currency scales, details and pag
   await expect(panel.getByText("stripe_invoice_event")).toBeVisible()
   await expect(panel.getByText("Fixture Studio")).toBeVisible()
   await expect(panel.getByText("Test Vendor")).toBeVisible()
+  await expect(panel.getByText("Premium", { exact: true })).toBeVisible()
   await expect(panel.getByText(/JPY\s+1,234/)).toBeVisible()
   await expect(panel.getByText("Unavailable")).toHaveCount(2)
   await expect(page.getByText(/Individual card payment attempts/)).toBeVisible()

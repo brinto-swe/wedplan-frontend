@@ -127,6 +127,7 @@ const adminTransaction = z.object({
   currency: z.string().regex(/^[a-z]{3}$/i),
   status: z.enum(["paid", "failed"]),
   type: z.literal("subscription"),
+  plan: z.literal("premium").nullish(),
   createdAt: z.iso.datetime(),
   dateBasis: z.literal("stripe_invoice_event"),
 })
