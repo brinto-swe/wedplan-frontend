@@ -1,7 +1,12 @@
 # WedPlan Frontend
 
-WedPlan is a Next.js App Router application. The production API runs at
-`https://wedplan-backend-six.vercel.app`.
+WedPlan helps couples find wedding services, request bookings, and track Vendor responses. Vendors can manage services and Premium subscriptions. Admins review listings, manage users, and read the Stripe invoice ledger.
+
+- [Live assignment Preview](https://deploy-preview-1--wedplan-frontend.netlify.app/)
+- [Frontend repository](https://github.com/brinto-swe/wedplan-frontend/tree/preview/admin-live-test)
+- [Backend repository](https://github.com/brinto-swe/wedplan-backend/tree/preview/stripe-sandbox)
+
+The frontend uses Next.js, TypeScript, Shadcn, TanStack Query, and Motion. The backend uses Express, MongoDB Atlas, Better Auth, Stripe Checkout, and ImgBB.
 
 ## Deploy to Netlify
 

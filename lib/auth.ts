@@ -26,13 +26,6 @@ export function signInEmail(email: string, password: string) {
   return authClient.signIn.email({ email, password })
 }
 
-export function signInWithProvider(provider: "google" | "github") {
-  return authClient.signIn.social({
-    provider,
-    callbackURL: new URL("/auth-smoke", window.location.origin).href,
-  })
-}
-
 export class ProtectedProfileError extends Error {
   constructor(readonly status: number, message: string) {
     super(message)
