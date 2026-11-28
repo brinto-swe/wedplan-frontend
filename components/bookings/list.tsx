@@ -53,7 +53,7 @@ export function BookingList({ role, userId }: { role: BookingRole; userId: strin
             {role === "customer" && !items.length && <Link className="wp-button" href="/services">Browse services</Link>}
           </div> : <>
             <ul className="booking-rows">{visible.map((booking) => <li key={booking.id} className={selected === booking.id ? "booking-row-selected" : undefined}>
-              <div><ServiceTitle booking={booking} service={services.get(booking.serviceId)} />{role === "vendor" && <p>From {booking.customerContact.name}</p>}
+              <div><ServiceTitle booking={booking} service={services.get(booking.serviceId)} showImage={role === "customer"} />{role === "vendor" && <p>From {booking.customerContact.name}</p>}
                 <p><time dateTime={booking.eventDate}>{eventDay(booking.eventDate)}</time> · {booking.eventLocation}</p></div>
               <BookingBadge status={booking.status} />
               {role === "customer" ? <Link className="wp-button wp-button-outline" href={`/customer/bookings/${booking.id}`}>View Details</Link>

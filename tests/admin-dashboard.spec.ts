@@ -4,7 +4,7 @@ import type { AdminOverview } from "../lib/admin"
 const path = "/admin/dashboard"
 const live: AdminOverview = {
   users: { total: 20, customers: 13, vendors: 6, admins: 1, active: 18, blocked: 2 },
-  services: { total: 9, active: 7, inactive: 2 },
+  services: { total: 9, active: 7, inactive: 2, pending: 2 },
   bookings: { total: 8, accepted: 3, pending: 2, rejected: 2, cancelled: 1 },
   subscriptions: { premium: 2, free: 4, cancellationScheduled: 1 },
   revenue: { amountUnit: "minor", dateBasis: "stripe_invoice_event", paidInvoiceCount: 4, failedInvoiceCount: 2, paidByCurrency: [
@@ -14,7 +14,7 @@ const live: AdminOverview = {
 }
 const empty: AdminOverview = {
   users: { total: 0, customers: 0, vendors: 0, admins: 0, active: 0, blocked: 0 },
-  services: { total: 0, active: 0, inactive: 0 },
+  services: { total: 0, active: 0, inactive: 0, pending: 0 },
   bookings: { total: 0, accepted: 0, pending: 0, rejected: 0, cancelled: 0 },
   subscriptions: { premium: 0, free: 0, cancellationScheduled: 0 },
   revenue: { ...live.revenue, paidInvoiceCount: 0, failedInvoiceCount: 0, paidByCurrency: [] },
@@ -58,6 +58,9 @@ test("shows the approved dashboard hierarchy and real overview statistics at des
   await expect(page.getByRole("heading", { name: "Welcome back, Admin!" })).toBeVisible()
   await expect(page.getByRole("navigation", { name: "Admin navigation", exact: true })).toBeVisible()
   await expect(page.getByRole("region", { name: "Workspace statistics" })).toContainText("20")
+  const pendingLink = page.getByRole("link", { name: "Pending Services" })
+  await expect(pendingLink).toHaveAttribute("href", "/admin/services?moderationStatus=pending")
+  await expect(pendingLink.locator("../../strong")).toHaveText("2")
   const users = page.getByRole("region", { name: "Users Overview" })
   for (const label of ["Customers", "Vendors", "Admins", "Active users", "Blocked users"]) {
     await expect(users.getByText(label, { exact: true })).toBeVisible()
@@ -88,7 +91,7 @@ test("renders overview skeletons then displays zero values and empty charts and 
   await expect(page.getByText("No platform activity to report yet.")).toBeVisible()
   await expect(page.getByText("No bookings to visualize yet.")).toBeVisible()
   await expect(page.getByText("No paid revenue has been recorded yet.")).toBeVisible()
-  await expect(page.getByRole("region", { name: "Workspace statistics" }).getByText("0", { exact: true })).toHaveCount(5)
+  await expect(page.getByRole("region", { name: "Workspace statistics" }).getByText("0", { exact: true })).toHaveCount(6)
 });
 
 test("retries rejected data requests and does not show counts until loaded", async ({ page }) => {
@@ -126,7 +129,7 @@ test("withholds metrics if the overview independently rejects the Admin token", 
   await expect(page.getByText("Total Users")).toHaveCount(0)
 });
 
-test("keeps mobile dashboard readable in light, dark and system themes", async ({ page }) => {
+test("keeps mobile dashboard readable in light and dark themes", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ colorScheme: "dark" })
   await mockAdmin(page)
@@ -135,9 +138,9 @@ test("keeps mobile dashboard readable in light, dark and system themes", async (
   await expect(page.getByRole("region", { name: "All-Time Revenue" })).toBeVisible()
   await page.getByText("Workspace", { exact: true }).click()
   await expect(page.getByRole("navigation", { name: "Mobile Admin navigation" })).toBeVisible()
-  const theme = page.getByLabel("Color theme")
-  for (const [option, appearance] of [["light", "light"], ["dark", "dark"], ["system", "dark"]]) {
-    await theme.selectOption(option)
+  const theme = page.getByRole("switch", { name: "Dark mode" })
+  for (const appearance of ["dark", "light"]) {
+    await theme.click()
     await expect(page.locator("html")).toHaveClass(new RegExp(`\\b${appearance}\\b`))
   }
   expect(await page.locator("html").evaluate((element) => element.scrollWidth <= window.innerWidth)).toBe(true)

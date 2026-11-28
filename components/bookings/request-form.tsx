@@ -2,22 +2,20 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState, type FormEvent } from "react"
-import { authClient } from "@/lib/auth"
+import { signInFor } from "@/lib/auth-navigation"
 import { BookingApiError, bookingInput, createBooking, utcToday, type Booking } from "@/lib/bookings"
-import { LoadingLabel } from "@/components/ui/loading-label"
 
-export function BookingRequest({ serviceId, autoOpen }: { serviceId: string; autoOpen: boolean }) {
-  const session = authClient.useSession()
-  const user = session.data?.user
+
+export function BookingRequest({ serviceId, autoOpen, customer }: { serviceId: string; autoOpen: boolean; customer: { name: string; email: string } }) {
   const [pending, setPending] = useState(false)
   const [issues, setIssues] = useState<Record<string, string>>({})
   const [error, setError] = useState<unknown>()
   const [created, setCreated] = useState<Booking>()
   const panel = useRef<HTMLElement>(null)
-  const signIn = `/sign-in?next=${encodeURIComponent(`/services/${serviceId}?book=1`)}`
+  const signIn = signInFor(`/services/${serviceId}?book=1`)
   useEffect(() => {
-    if (autoOpen && !session.isPending) panel.current?.focus()
-  }, [autoOpen, session.isPending])
+    if (autoOpen) panel.current?.focus()
+  }, [autoOpen])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -46,18 +44,13 @@ export function BookingRequest({ serviceId, autoOpen }: { serviceId: string; aut
   const issue = (key: string) => issues[key] && <span className="booking-field-error" id={`booking-error-${key}`}>{issues[key]}</span>
   if (!/^[a-f0-9]{24}$/i.test(serviceId)) return <p>Bookings are available for live service listings.</p>
   return <section ref={panel} tabIndex={-1} aria-label="Booking request" className="booking-request">
-    {session.isPending ? <LoadingLabel>Checking your session…</LoadingLabel> : session.error && session.error.status !== 401 ?
-      <div className="booking-feedback" role="alert"><p>{session.error.status === 403 ? "This account cannot request bookings." : "Your session could not be checked."}</p>
-        {session.error.status !== 403 && <button type="button" className="wp-button wp-button-outline" onClick={() => void session.refetch()}>Try again</button>}</div>
-      : !user ? <Link href={signIn} className="wp-button">Sign in to request booking</Link>
-      : "role" in user && user.role !== "customer" ? <p>Only customer accounts can request bookings.</p>
-      : created ? <div className="booking-success" role="status"><strong>Booking request sent</strong><p>The vendor can now review your request.</p><Link className="wp-text-link" href={`/customer/bookings/${created.id}`}>View your booking</Link></div>
+    {created ? <div className="booking-success" role="status"><strong>Booking request sent</strong><p>The vendor can now review your request.</p><Link className="wp-text-link" href={`/customer/bookings/${created.id}`}>View your booking</Link></div>
       : <form method="post" onSubmit={submit} noValidate>
         <fieldset disabled={pending}>
           <label>Event date<input name="eventDate" type="date" min={utcToday()} required {...invalid("eventDate")} />{issue("eventDate")}</label>
           <label>Event location<input name="eventLocation" maxLength={200} required {...invalid("eventLocation")} />{issue("eventLocation")}</label>
-          <label>Contact name<input name="name" defaultValue={user.name} autoComplete="name" maxLength={120} required {...invalid("customerContact.name")} />{issue("customerContact.name")}</label>
-          <label>Email<input name="email" type="email" defaultValue={user.email} autoComplete="email" required {...invalid("customerContact.email")} />{issue("customerContact.email")}</label>
+          <label>Contact name<input name="name" defaultValue={customer.name} autoComplete="name" maxLength={120} required {...invalid("customerContact.name")} />{issue("customerContact.name")}</label>
+          <label>Email<input name="email" type="email" defaultValue={customer.email} autoComplete="email" required {...invalid("customerContact.email")} />{issue("customerContact.email")}</label>
           <label>Phone<input name="phone" type="tel" autoComplete="tel" maxLength={32} required {...invalid("customerContact.phone")} />{issue("customerContact.phone")}</label>
           <label>Message (optional)<textarea name="notes" rows={3} maxLength={2000} {...invalid("notes")} />{issue("notes")}</label>
           <button className="wp-button" type="submit">{pending ? "Sending…" : "Send Booking Request"}</button>

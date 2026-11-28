@@ -1,7 +1,9 @@
 "use client"
 
 import { z } from "zod"
-import { authClient } from "@/lib/auth"
+import { authClient, getProtectedToken } from "@/lib/auth"
+import { serviceImageUrls } from "@/lib/service-image-urls"
+import { accountProfile } from "@/lib/profile"
 
 const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
 const id = z.string().regex(/^[a-f0-9]{24}$/i)
@@ -19,8 +21,9 @@ const record = base.extend({
   id, customerId: z.string(), vendorId: z.string(), status: z.enum(statuses), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 })
 const list = z.object({ data: z.array(record), pagination: z.object({ totalPages: z.number().int().min(0).max(10000) }) })
-const listing = z.object({ data: z.object({ title: z.string(), category: z.string(), vendorName: z.string().optional() }) })
-const profile = z.object({ id: z.string(), name: z.string(), email: z.string(), role: z.string() })
+const listing = z.object({ data: z.object({
+  title: z.string(), category: z.string(), vendorName: z.string().optional(), vendorPremium: z.boolean().optional(), images: serviceImageUrls.optional(),
+}) })
 const errorBody = z.object({ issues: z.array(z.object({ path: z.string(), message: z.string() })).optional() })
 export type Booking = z.infer<typeof record>
 export type BookingInput = z.infer<typeof bookingInput>
@@ -55,7 +58,7 @@ async function request(path: string, token: string, options: RequestInit = {}) {
 export async function bookingAccess(role: BookingRole, signal?: AbortSignal) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10000 } })
   if (!data?.token) throw new BookingApiError(error?.status ?? 401, error?.status === 403 ? "Your account cannot access bookings." : error?.status && error.status !== 401 ? "We couldn't verify your session." : "Sign in again to continue.")
-  const current = profile.parse(await request("/api/me", data.token, { signal }))
+  const current = accountProfile.parse(await request("/api/me", data.token, { signal }))
   if (current.role !== role) throw new BookingApiError(403, `This action requires a ${role} account.`)
   return { profile: current, token: data.token }
 }
@@ -91,7 +94,9 @@ export async function updateBooking(role: BookingRole, bookingId: string, action
 }
 
 export async function bookingService(serviceId: string, signal?: AbortSignal) {
+  const token = await getProtectedToken(signal)
   const response = await fetch(new URL(`/api/services/${id.parse(serviceId)}`, origin), {
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.any([AbortSignal.timeout(5000), ...(signal ? [signal] : [])]), cache: "no-store", credentials: "omit",
   })
   if (!response.ok) return null

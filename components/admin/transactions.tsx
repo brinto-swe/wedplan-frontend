@@ -33,6 +33,10 @@ function VendorDisplay({ transaction }: { transaction: AdminTransaction }) {
   </div>
 }
 
+function planLabel(plan: AdminTransaction["plan"]) {
+  return plan === "premium" ? "Premium" : "Not recorded"
+}
+
 function TransactionSkeleton({ label }: { label: string }) {
   return <div className="vendor-card admin-user-loading" aria-busy="true">
     <LoadingLabel>{label}</LoadingLabel>
@@ -60,6 +64,7 @@ function TransactionDetails({ id, close }: { id: string; close: () => void }) {
         <dl className="admin-metrics">
           <div><dt>Invoice ID</dt><dd>{detail.data.id}</dd></div>
           <div><dt>Vendor</dt><dd><VendorDisplay transaction={detail.data} /></dd></div>
+          <div><dt>Plan</dt><dd>{planLabel(detail.data.plan)}</dd></div>
           <div><dt>Vendor ID</dt><dd>{detail.data.vendorId}</dd></div>
           <div><dt>Amount</dt><dd>{formatStripeAmount(detail.data.amount, detail.data.currency, "code")}</dd></div>
           <div><dt>Invoice type</dt><dd>Subscription</dd></div>
@@ -140,12 +145,13 @@ export function AdminTransactions() {
             {ledger.data.data.length ? <div className="vendor-table-wrap" role="region" tabIndex={0} aria-label="Scrollable transactions table">
               <table className="vendor-table">
                 <thead><tr>
-                  <th scope="col">Invoice ID</th><th scope="col">Vendor</th><th scope="col">Amount</th><th scope="col">Status</th>
+                  <th scope="col">Invoice ID</th><th scope="col">Vendor</th><th scope="col">Plan</th><th scope="col">Amount</th><th scope="col">Status</th>
                   <th scope="col">Recorded event (UTC)</th><th scope="col">Details</th>
                 </tr></thead>
                 <tbody>{ledger.data.data.map((row) => <tr key={row.id} data-selected={row.id === selected}>
                   <th scope="row"><span className="admin-transaction-id">{row.id}</span></th>
                   <td><VendorDisplay transaction={row} /></td>
+                  <td>{planLabel(row.plan)}</td>
                   <td className="admin-transaction-amount">{formatStripeAmount(row.amount, row.currency, "code")}</td>
                   <td><PaymentStatus status={row.status} /></td>
                   <td><TransactionDate value={row.createdAt} /></td>

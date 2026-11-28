@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { PublicFooter, PublicHeader } from "@/components/public/site-shell"
+import { PublicHeader } from "@/components/public/site-shell"
+import { PublicFooter } from "@/components/public/site-footer"
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return <div className="wp-site">

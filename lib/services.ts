@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { moderationStatus } from "@/lib/service-publication"
+import { serviceImageUrls } from "@/lib/service-image-urls"
 
 const serviceSchema = z.object({
   id: z.string().min(1),
@@ -8,10 +10,25 @@ const serviceSchema = z.object({
   price: z.number().nonnegative(),
   location: z.string(),
   vendorId: z.string(),
+  vendorName: z.string().optional(),
+  vendorPremium: z.boolean().optional(),
+  images: serviceImageUrls.optional(),
+  moderationStatus: moderationStatus.optional(),
+  isActive: z.boolean().optional(),
 })
 
-export type Service = z.infer<typeof serviceSchema> & { vendorName?: string; demo?: true }
-export type Filters = { q?: string; category?: string; location?: string; page: number }
+function isPublicService(service: z.infer<typeof serviceSchema>) {
+  return service.isActive === true && service.moderationStatus === "approved"
+}
+
+export type Service = z.infer<typeof serviceSchema> & { demo?: true }
+export const serviceSortLabels = {
+  newest: "Newest",
+  "price-asc": "Price: Low to High",
+  "price-desc": "Price: High to Low",
+} as const
+export type ServiceSort = keyof typeof serviceSortLabels
+export type Filters = { q?: string; category?: string; location?: string; sort?: ServiceSort; page: number }
 
 const listSchema = z.object({
   data: z.array(serviceSchema),
@@ -22,17 +39,27 @@ const listSchema = z.object({
 const detailSchema = z.object({ data: serviceSchema })
 type ServiceList = Omit<z.infer<typeof listSchema>, "data"> & { data: Service[]; demo: boolean }
 
-export const categories = [
+export const categoryNames = [
+  "Photography & Videography", "Wedding Venues", "Decoration & Florist",
+  "Catering Services", "Makeup & Styling", "Wedding Fashion",
+] as const
+
+const categories = [
   { name: "Venues", image: "/weddings/venues.webp", alt: "Garden ceremony at a historic villa" },
   { name: "Photography", image: "/weddings/photography.webp", alt: "Newlyweds on a stone staircase" },
   { name: "Florals", image: "/weddings/florals.webp", alt: "Garden roses and hydrangeas arranged for a wedding" },
   { name: "Catering", image: "/weddings/catering.webp", alt: "Champagne and porcelain on a reception table" },
 ]
 
-export function serviceImages(category: string) {
-  const image = categories.find((item) => category.toLowerCase().includes(item.name.toLowerCase().replace(/s$/, "")))
+export function serviceImages(category: string, images?: readonly string[], title = "Service") {
+  const categoryKey = category === "Decoration & Florist" ? "Florals" : category
+  const image = categories.find((item) => categoryKey.toLowerCase().includes(item.name.toLowerCase().replace(/s$/, "")))
     ?? { image: "/weddings/hero.webp", alt: "An outdoor wedding reception at a stone villa" }
+  if (images?.length) return [...new Set(images)].map((url, index) => ({
+    image: url, alt: `${title}, image ${index + 1}`, fallback: image.image,
+  }))
   return [image, ...categories.filter((item) => item.image !== image.image).slice(0, 2)]
+    .map((item) => ({ image: item.image, alt: item.alt, fallback: item.image }))
 }
 
 const demos: Service[] = [
@@ -47,6 +74,7 @@ function queryParams(filters: Filters) {
   for (const key of ["q", "category", "location"] as const) {
     if (filters[key]) params.set(key, filters[key])
   }
+  if (filters.sort && filters.sort !== "newest") params.set("sort", filters.sort)
   if (filters.page > 1) params.set("page", String(filters.page))
   return params
 }
@@ -56,41 +84,53 @@ export function browseUrl(filters: Filters) {
   return query ? `/services?${query}` : "/services"
 }
 
-export function parseFilters(query: Record<string, string | string[] | undefined>): Filters {
+export function parseFilters(query: Record<string, string | string[] | undefined>) {
   const field = (name: string, max: number) => {
     const value = query[name]
     return typeof value === "string" ? value.trim().slice(0, max) || undefined : undefined
   }
   const rawPage = query.page
   const page = typeof rawPage === "string" && /^[1-9]\d{0,4}$/.test(rawPage) ? Math.min(Number(rawPage), 10_000) : 1
-  return { q: field("q", 120), category: field("category", 80), location: field("location", 120), page }
+  const sort = query.sort === "price-asc" || query.sort === "price-desc" ? query.sort : "newest"
+  return { q: field("q", 120), category: field("category", 80), location: field("location", 120), page, sort } satisfies Filters
 }
 
-async function request(path: string) {
+async function request(path: string, token?: string, signal?: AbortSignal) {
   const origin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000"
-  return fetch(new URL(path, origin), { cache: "no-store", signal: AbortSignal.timeout(3000) })
+  return fetch(new URL(path, origin), {
+    cache: "no-store", credentials: "omit",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    signal: AbortSignal.any([AbortSignal.timeout(3000), ...(signal ? [signal] : [])]),
+  })
+}
+
+export async function listLiveServices(filters: Filters, limit = 9): Promise<ServiceList> {
+  const params = queryParams(filters)
+  params.set("limit", String(limit))
+  const response = await request(`/api/services?${params}`)
+  if (!response.ok) throw new Error("Service catalog unavailable")
+  const result = listSchema.parse(await response.json())
+  return { ...result, data: result.data.filter(isPublicService), demo: false }
 }
 
 export async function listServices(filters: Filters, limit = 9): Promise<ServiceList> {
-  const params = queryParams(filters)
-  params.set("limit", String(limit))
   try {
-    const response = await request(`/api/services?${params}`)
-    if (!response.ok) throw new Error("Service catalog unavailable")
-    return { ...listSchema.parse(await response.json()), demo: false }
+    return await listLiveServices(filters, limit)
   } catch {
     const data = demos.filter((item) =>
       (!filters.category || item.category.toLowerCase() === filters.category.toLowerCase()) &&
       (!filters.location || item.location.toLowerCase() === filters.location.toLowerCase()) &&
       (!filters.q || [item.title, item.description].some((text) => text.toLowerCase().includes(filters.q!.toLowerCase())))
     )
+    if (filters.sort === "price-asc") data.sort((first, second) => first.price - second.price)
+    if (filters.sort === "price-desc") data.sort((first, second) => second.price - first.price)
     const offset = (filters.page - 1) * limit
     return { data: data.slice(offset, offset + limit), demo: true,
       pagination: { page: filters.page, limit, total: data.length, totalPages: Math.ceil(data.length / limit) } }
   }
 }
 
-export async function getService(id: string): Promise<{ kind: "found"; service: Service } | { kind: "missing" | "unavailable" }> {
+export async function getService(id: string, token: string, signal?: AbortSignal): Promise<{ kind: "found"; service: Service } | { kind: "missing" | "unauthorized" | "forbidden" | "unavailable" }> {
   const demo = demos.find((service) => service.id === id)
   if (demo) {
     const catalog = await listServices({ page: 1 }, 1)
@@ -98,10 +138,13 @@ export async function getService(id: string): Promise<{ kind: "found"; service: 
   }
   if (!/^[a-f0-9]{24}$/i.test(id)) return { kind: "missing" }
   try {
-    const response = await request(`/api/services/${encodeURIComponent(id)}`)
+    const response = await request(`/api/services/${encodeURIComponent(id)}`, token, signal)
+    if (response.status === 401) return { kind: "unauthorized" }
+    if (response.status === 403) return { kind: "forbidden" }
     if (response.status === 404) return { kind: "missing" }
     if (!response.ok) return { kind: "unavailable" }
-    return { kind: "found", service: detailSchema.parse(await response.json()).data }
+    const { data } = detailSchema.parse(await response.json())
+    return isPublicService(data) ? { kind: "found", service: data } : { kind: "missing" }
   } catch {
     return { kind: "unavailable" }
   }

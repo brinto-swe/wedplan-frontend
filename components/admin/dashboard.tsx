@@ -79,6 +79,7 @@ function Overview({ data }: { data: AdminOverview }) {
       { label: "Total Users", value: number.format(users.total), icon: Users },
       { label: "Total Vendors", value: number.format(users.vendors), icon: Store },
       { label: "Total Services", value: number.format(services.total), icon: Layers3 },
+      { label: "Pending Services", value: number.format(services.pending), icon: Layers3, href: "/admin/services?moderationStatus=pending" },
       { label: "Total Bookings", value: number.format(bookings.total), icon: CalendarDays },
       { label: "Premium Vendors", value: number.format(subscriptions.premium), icon: Crown },
     ]} />

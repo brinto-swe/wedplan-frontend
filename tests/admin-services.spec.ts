@@ -4,7 +4,7 @@ import type { AdminServiceRow } from "../lib/admin"
 const vendorId = "000000000000000000000001"
 const timestamp = "2025-01-05T12:00:00.000Z"
 const path = "/admin/services"
-type Options = { role?: string; listStatus?: number; activationStatus?: number }
+type Options = { role?: string; listStatus?: number; activationStatus?: number; moderation?: boolean; moderationStatus?: number }
 
 async function setup(page: Page, options: Options = {}) {
   const profile = { id: "admin-fixture", role: "admin", name: "Test Admin" }
@@ -12,7 +12,8 @@ async function setup(page: Page, options: Options = {}) {
     id: (index + 2).toString(16).padStart(24, "0"), title: "Service " + (index + 1),
     vendorId: index === 0 ? vendorId : "000000000000000000000010",
     category: index === 0 ? "Photography" : "Venue", description: index === 0 ? "Reception portraits" : "Wedding space",
-    isActive: index !== 0, price: 100.5, location: "Dhaka", createdAt: timestamp, updatedAt: timestamp,
+    vendorAvailable: index !== 0, moderationStatus: options.moderation && index < 2 ? "pending" : "approved",
+    isActive: index !== 0 && !(options.moderation && index < 2), price: 100.5, location: "Dhaka", createdAt: timestamp, updatedAt: timestamp,
     vendor: index === 0 ? { id: vendorId, name: "Test Vendor", businessName: "Fixture Studio" } : null,
   }))
   let writes = 0
@@ -36,13 +37,24 @@ async function setup(page: Page, options: Options = {}) {
         (!q || (row.title + " " + row.description).toLowerCase().includes(q)) &&
         (!params.has("vendorId") || row.vendorId === params.get("vendorId")) &&
         (!params.has("category") || row.category === params.get("category")) &&
+        (!params.has("moderationStatus") || row.moderationStatus === params.get("moderationStatus")) &&
         (!params.has("visibility") || row.isActive === (params.get("visibility") === "active")))
       const currentPage = Number(params.get("page"))
       const limit = Number(params.get("limit"))
       return route.fulfill({ json: { data: records.slice((currentPage - 1) * limit, currentPage * limit),
         pagination: { page: currentPage, limit, total: records.length, totalPages: Math.ceil(records.length / limit) } } })
     }
-    const index = fixtures.findIndex((row) => url.pathname === "/api/admin/services/" + row.id)
+    const index = fixtures.findIndex((row) => ["/api/admin/services/" + row.id, "/api/admin/services/" + row.id + "/moderation"].includes(url.pathname))
+    if (url.pathname.endsWith("/moderation") && index >= 0 && request.method() === "PATCH") {
+      writes++
+      const body = request.postDataJSON()
+      expect(Object.keys(body)).toEqual(["status"])
+      if (options.moderationStatus) return route.fulfill({ status: options.moderationStatus, json: {} })
+      const row = fixtures[index]
+      row.moderationStatus = body.status
+      row.isActive = body.status === "approved" && row.vendorAvailable
+      return route.fulfill({ json: { data: row } })
+    }
     if (index < 0) return route.fulfill({ status: 404, json: {} })
     if (request.method() === "DELETE") {
       writes++
@@ -55,9 +67,9 @@ async function setup(page: Page, options: Options = {}) {
       expect(Object.keys(patch).sort()).toEqual("isActive" in patch ? ["isActive"] : ["category", "description", "location", "price", "title"])
       if (patch.isActive === true && options.activationStatus) return route.fulfill({ status: options.activationStatus, json: {} })
       Object.assign(fixtures[index], patch)
+      if (typeof patch.isActive === "boolean") fixtures[index].vendorAvailable = patch.isActive
     } else details++
-    const { id, title, category, description, isActive, price, vendorId: owner, location, createdAt, updatedAt } = fixtures[index]
-    return route.fulfill({ json: { data: { id, title, category, description, isActive, price, vendorId: owner, location, createdAt, updatedAt } } })
+    return route.fulfill({ json: { data: fixtures[index] } })
   })
   return { writes: () => writes, lists: () => lists, details: () => details }
 }
@@ -99,11 +111,11 @@ test("edits, activates, deactivates and deletes after confirmation", async ({ pa
   await dialog.getByRole("button", { name: "Save changes" }).click()
   await expect(dialog).toBeHidden()
   const row = page.getByRole("row").filter({ hasText: "Updated portraits" })
-  await row.getByRole("button", { name: "Activate Updated portraits" }).click()
-  await dialog.getByRole("button", { name: "Activate service" }).click()
+  await row.getByRole("button", { name: "Enable availability for Updated portraits" }).click()
+  await dialog.getByRole("button", { name: "Enable availability" }).click()
   await expect(row.getByText("Active", { exact: true })).toBeVisible()
-  await row.getByRole("button", { name: "Deactivate Updated portraits" }).click()
-  await dialog.getByRole("button", { name: "Deactivate service" }).click()
+  await row.getByRole("button", { name: "Pause availability for Updated portraits" }).click()
+  await dialog.getByRole("button", { name: "Pause availability" }).click()
   await expect(row.getByText("Inactive", { exact: true })).toBeVisible()
   await row.getByRole("button", { name: "Delete Updated portraits" }).click()
   await expect(dialog.getByText(/Permanently delete/)).toBeVisible()
@@ -116,7 +128,7 @@ test("edits, activates, deactivates and deletes after confirmation", async ({ pa
   expect(calls.writes()).toBe(4)
 })
 
-test("retries listing errors and explains the server activation limit", async ({ page }) => {
+test("retries listing errors and explains the server availability conflict", async ({ page }) => {
   const options: Options = { listStatus: 503, activationStatus: 409 }
   await setup(page, options)
   await page.goto(path)
@@ -124,10 +136,10 @@ test("retries listing errors and explains the server activation limit", async ({
   options.listStatus = 0
   await page.getByRole("button", { name: "Try again" }).click()
   const row = page.getByRole("row").filter({ hasText: "Service 1" })
-  await row.getByRole("button", { name: "Activate Service 1" }).click()
+  await row.getByRole("button", { name: "Enable availability for Service 1" }).click()
   const dialog = page.getByRole("dialog")
-  await dialog.getByRole("button", { name: "Activate service" }).click()
-  await expect(dialog.getByRole("alert")).toContainText("at most 3 active services")
+  await dialog.getByRole("button", { name: "Enable availability" }).click()
+  await expect(dialog.getByRole("alert")).toContainText("Availability can only change after approval")
   await dialog.getByRole("button", { name: "Cancel" }).click()
   await expect(row.getByText("Inactive", { exact: true })).toBeVisible()
 })
@@ -151,3 +163,34 @@ for (const role of ["customer", "vendor", "blocked", "anonymous"]) {
     expect(calls.lists()).toBe(0)
   })
 }
+
+test("opens the Pending filter and confirms approval and rejection before sending decisions", async ({ page }) => {
+  const options: Options = { moderation: true }
+  const calls = await setup(page, options)
+  await page.goto(path + "?moderationStatus=pending")
+  const filters = page.getByRole("group", { name: "Moderation filters" })
+  await expect(filters.getByRole("button", { name: "Pending" })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("row").filter({ hasText: "Service 3" })).toHaveCount(0)
+  const dialog = page.getByRole("dialog")
+  await page.getByRole("button", { name: "Approve Service 1" }).click()
+  await expect(dialog).toBeVisible()
+  expect(calls.writes()).toBe(0)
+  await dialog.getByRole("button", { name: "Approve service" }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText("Service approved.", { exact: true })).toBeVisible()
+  await expect(page.getByRole("row").filter({ hasText: "Service 1" })).toHaveCount(0)
+
+  options.moderationStatus = 409
+  await page.getByRole("button", { name: "Reject Service 2" }).click()
+  await dialog.getByRole("button", { name: "Reject service" }).click()
+  await expect(dialog.getByRole("alert")).toContainText("no longer pending")
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("row").filter({ hasText: "Service 2" })).toContainText("Pending")
+  options.moderationStatus = 0
+  await page.getByRole("button", { name: "Reject Service 2" }).click()
+  await dialog.getByRole("button", { name: "Reject service" }).click()
+  await expect(page.getByText("Service rejected.", { exact: true })).toBeVisible()
+  await filters.getByRole("button", { name: "Rejected" }).click()
+  await expect(page.getByRole("row").filter({ hasText: "Service 2" })).toContainText("Inactive")
+  await expect(page.getByRole("button", { name: "Enable availability for Service 2" })).toHaveCount(0)
+})

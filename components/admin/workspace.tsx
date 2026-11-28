@@ -8,7 +8,7 @@ import { useEffect, useState, type ReactNode } from "react"
 
 import { LoadingLabel } from "@/components/ui/loading-label"
 import { UiIcon } from "@/components/ui/icon"
-import { ThemeSelect } from "@/components/ui/theme-select"
+import { DashboardAccountControls } from "@/components/ui/dashboard-account-controls"
 import { authClient } from "@/lib/auth"
 import { AdminApiError, getAdminProfile } from "@/lib/admin"
 import { adminDashboardPath, adminReturn, adminServicesPath, adminTransactionsPath, adminUsersPath } from "@/lib/admin-navigation"
@@ -86,7 +86,7 @@ function Gate({ children }: { children: ReactNode }) {
     <div className="vendor-content">
       <header className="vendor-topbar">
         <div className="vendor-crumb"><Link href={adminDashboardPath}>Admin Dashboard</Link><UiIcon icon={ChevronRight} size="sm" /><strong>{pageTitle}</strong></div>
-        <span className="admin-topbar-name">{name}</span><ThemeSelect />
+        <span className="admin-topbar-name">{name}</span><DashboardAccountControls />
         <details className="vendor-mobile-links">
           <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>
           <nav aria-label="Mobile Admin navigation">{nav}</nav>

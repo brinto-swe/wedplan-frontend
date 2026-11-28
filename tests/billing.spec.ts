@@ -108,16 +108,16 @@ test("rejects a Checkout redirect outside Stripe", async ({ page }) => {
   await expect(page).toHaveURL(subscriptionPath)
 })
 
-test("billing fits on mobile and follows light, dark, and system themes", async ({ page }) => {
+test("billing fits on mobile and follows light and dark themes", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ colorScheme: "dark" })
   await mockBilling(page, { current: premium })
   await page.goto(subscriptionPath)
   await expect(page.getByRole("heading", { name: "Subscription Plans" })).toBeVisible()
-  const theme = page.getByLabel("Color theme")
+  const theme = page.getByRole("switch", { name: "Dark mode" })
   const html = page.locator("html")
-  for (const [option, appearance] of [["light", "light"], ["dark", "dark"], ["system", "dark"]]) {
-    await theme.selectOption(option)
+  for (const appearance of ["dark", "light"]) {
+    await theme.click()
     await expect(html).toHaveClass(new RegExp(`\\b${appearance}\\b`))
   }
   expect(await html.evaluate((element) => element.scrollWidth <= window.innerWidth)).toBe(true)

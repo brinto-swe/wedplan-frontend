@@ -2,7 +2,8 @@
 
 import { UiIcon } from "@/components/ui/icon"
 import { LoadingLabel } from "@/components/ui/loading-label"
-import { ThemeSelect } from "@/components/ui/theme-select"
+import { DashboardAccountControls } from "@/components/ui/dashboard-account-controls"
+import { AccountAvatar } from "@/components/ui/account-avatar"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
@@ -11,7 +12,8 @@ import { CalendarDays, ChevronDown, ChevronRight, Crown, HeartHandshake, LayoutD
 
 import { ActionLink } from "@/components/public/ui"
 import { authClient } from "@/lib/auth"
-import { billingReturn } from "@/lib/billing-navigation"
+import { signInFor } from "@/lib/auth-navigation"
+import { profileKey } from "@/lib/profile"
 import { getVendorProfile, listVendorServices, VendorApiError, vendorPlan, type Plan, type VendorProfile } from "@/lib/vendor-services"
 
 const WorkspaceContext = createContext<{ profile: VendorProfile; plan: Plan } | null>(null)
@@ -62,23 +64,23 @@ const navigation = [
   { href: "/vendor/services/new", label: "Add Service", icon: Plus },
   { href: "/vendor/bookings", label: "Booking Requests", icon: CalendarDays },
   { href: "/vendor/subscription", label: "Subscription", icon: Crown },
+  { href: "/vendor/profile", label: "Profile Settings", icon: User },
 ]
 
 function VendorGate({ children }: { children: ReactNode }) {
   const session = authClient.useSession()
   const user = session.data?.user
   const profile = useQuery({
-    queryKey: ["vendor-profile", user?.id],
+    queryKey: profileKey("vendor", user?.id),
     enabled: Boolean(user && !session.error),
     queryFn: ({ signal }) => getVendorProfile(signal),
   })
   const pathname = usePathname()
   const router = useRouter()
-  const returnTo = billingReturn(pathname)
-  const signIn = returnTo && !user && (!session.error || session.error.status === 401)
+  const signIn = !user && (!session.error || session.error.status === 401)
   useEffect(() => {
-    if (signIn && !session.isPending) router.replace("/sign-in?next=" + encodeURIComponent(returnTo))
-  }, [returnTo, router, session.isPending, signIn])
+    if (signIn && !session.isPending) router.replace(signInFor(pathname))
+  }, [pathname, router, session.isPending, signIn])
 
   if (session.isPending || signIn || (user && profile.isPending && !session.error)) return <div className="vendor-gateway"><LoadingState /></div>
   if (session.error) {
@@ -100,13 +102,12 @@ function VendorShell({ children }: { children: ReactNode }) {
       <a className="wp-skip" href="#vendor-main">Skip to content</a>
       <aside className="vendor-sidebar">
         <Link className="wp-brand" href="/"><UiIcon icon={HeartHandshake} size="xl" /> WedPlan<span>.</span></Link>
-        <div className="vendor-identity"><span className="vendor-avatar" aria-hidden="true">{profile.name.trim().charAt(0).toUpperCase()}</span><div><strong>{profile.name}</strong><p>Vendor account</p></div></div>
+        <div className="vendor-identity"><AccountAvatar name={profile.name} image={profile.image} /><div><strong>{profile.name}</strong><p>{profile.businessName || "Vendor account"}</p></div></div>
         <nav aria-label="Vendor navigation">
           {navigation.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href === "/vendor/services" && pathname.endsWith("/edit"))
             return <Link key={href} href={href} aria-current={active ? "page" : undefined}><UiIcon icon={Icon} size="sm" />{label}</Link>
           })}
-          <span className="vendor-nav-disabled" aria-disabled="true"><UiIcon icon={User} size="sm" />Profile Settings</span>
         </nav>
         <div className="vendor-sidebar-plan"><UiIcon icon={Crown} size="xl" /><strong>{plan === "Premium" ? "Premium Plan" : plan === "Free" ? "Free Plan" : "Subscription"}</strong><p>{plan === "Premium" ? "Unlimited active service listings." : plan === "Free" ? "Publish up to three active services." : "Plan information unavailable."}</p></div>
         <Link href="/services" className="vendor-public-link">Public directory</Link>
@@ -116,7 +117,7 @@ function VendorShell({ children }: { children: ReactNode }) {
           <div className="vendor-crumb"><Link href="/vendor/dashboard">Vendor Dashboard</Link>{pathname !== "/vendor/dashboard" && <><UiIcon icon={ChevronRight} size="sm" /><strong>{pathname.endsWith("/edit") ? "Edit Service" : pathname.endsWith("/new") ? "Add New Service" : navigation.find((item) => item.href === pathname)?.label}</strong></>}</div>
           <span>{profile.name}</span>
           <span className="vendor-badge">{plan === "Unavailable" ? "Plan unavailable" : `${plan} plan`}</span>
-          <ThemeSelect />
+          <DashboardAccountControls />
           <details className="vendor-mobile-links">
             <summary>Workspace <UiIcon icon={ChevronDown} size="sm" /></summary>
             <nav aria-label="Mobile vendor navigation">

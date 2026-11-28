@@ -1,7 +1,12 @@
 # WedPlan Frontend
 
-WedPlan is a Next.js App Router application. The production API runs at
-`https://wedplan-backend-six.vercel.app`.
+WedPlan helps couples find wedding services, request bookings, and track Vendor responses. Vendors can manage services and Premium subscriptions. Admins review listings, manage users, and read the Stripe invoice ledger.
+
+- [Live assignment Preview](https://deploy-preview-1--wedplan-frontend.netlify.app/)
+- [Frontend repository](https://github.com/brinto-swe/wedplan-frontend/tree/preview/admin-live-test)
+- [Backend repository](https://github.com/brinto-swe/wedplan-backend/tree/preview/stripe-sandbox)
+
+The frontend uses Next.js, TypeScript, Shadcn, TanStack Query, and Motion. The backend uses Express, MongoDB Atlas, Better Auth, Stripe Checkout, and ImgBB.
 
 ## Deploy to Netlify
 
@@ -30,6 +35,16 @@ On the matching Vercel backend, configure both `CLIENT_URL` and `BETTER_AUTH_URL
 Register those complete callback URLs in the corresponding provider apps. Keep the Preview `BETTER_AUTH_SECRET` consistent with the secret that encrypted its stored JWT signing keys. The Preview backend must use the dedicated test MongoDB credential and `MONGODB_DATABASE=wedplan_stripe_test`. Keep production credentials and data out of Preview. MongoDB, Better Auth, and OAuth secrets belong on Vercel.
 
 Before authenticated Preview testing, confirm the selected Vercel deployment uses the isolated database and that its deployment protection permits Netlify’s proxy requests. After a manually approved deployment, test `/api/auth/ok` and a query-bearing `/api/services` through Netlify, then verify sign-in, reload, JWT-backed Admin reads, and sign-out on that hostname. Verify a disposable authenticated mutation through Preview to check request-body forwarding. Confirm the auth cookie belongs to the Netlify origin and session responses are uncached.
+
+### Hosted Preview Smoke Test Checklist
+
+- [ ] Verify the Preview frontend’s same-origin `/api/*` proxy targets the isolated Vercel Preview backend.
+- [ ] Confirm that backend connects to `wedplan_stripe_test` with the dedicated test credential before signing in or performing mutations.
+- [ ] Sign in as the disposable Admin and verify the session persists after a reload.
+- [ ] Open Dashboard, Users, Services, and Transactions and confirm each page loads live test data.
+- [ ] Test block/unblock and service edit, visibility change, and deletion using only disposable test records. Clean up any records created for the smoke test.
+- [ ] Verify anonymous, Customer, Vendor, and blocked Admin requests are denied access to Admin pages and APIs as appropriate.
+- [ ] Confirm the smoke test left Production data and accounts untouched.
 
 Wedding images are local WebP files under `public/weddings`. Keep the existing `next/image` setup and the adapter’s Image CDN integration.
 

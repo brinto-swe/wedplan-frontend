@@ -122,7 +122,7 @@ test("users page fits mobile and displays a genuine empty list", async ({ page }
   await setup(page, { empty: true })
   await page.goto(route)
   await expect(page.getByRole("heading", { name: "No users yet" })).toBeVisible()
-  await page.getByLabel("Color theme").selectOption("dark")
+  await page.getByRole("switch", { name: "Dark mode" }).click()
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
   expect(await page.locator("html").evaluate((node) => node.scrollWidth <= window.innerWidth)).toBe(true)
 });
