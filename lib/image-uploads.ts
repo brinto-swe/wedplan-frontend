@@ -23,11 +23,19 @@ export async function uploadImage(file: File, signal: AbortSignal) {
   const { data, error } = await authClient.token({ fetchOptions: { signal, timeout: 10_000 } })
   if (!data?.token) throw new Error(messages[error?.status ?? 401] ?? "Could not verify your session.")
 
+  return postImage("/api/uploads/images", file, signal, { Authorization: `Bearer ${data.token}` })
+}
+
+export function uploadSignupImage(file: File, signal: AbortSignal) {
+  return postImage("/api/uploads/signup-profile-image", file, signal, { "X-WedPlan-Upload": "signup-profile" })
+}
+
+async function postImage(path: string, file: File, signal: AbortSignal, headers: Record<string, string>) {
   const body = new FormData()
   body.append("images", file)
-  const response = await fetch(new URL("/api/uploads/images", apiOrigin), {
+  const response = await fetch(new URL(path, apiOrigin), {
     method: "POST", body, credentials: "omit", cache: "no-store",
-    headers: { Authorization: `Bearer ${data.token}` },
+    headers,
     signal: AbortSignal.any([signal, AbortSignal.timeout(20_000)]),
   })
   if (response.status !== 201) throw new Error(messages[response.status] ?? "Could not upload this image. Try again.")

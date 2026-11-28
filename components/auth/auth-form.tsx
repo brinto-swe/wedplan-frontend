@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
+import { ImageUploader } from "@/components/ui/image-uploader"
+import { uploadSignupImage } from "@/lib/image-uploads"
 import { Button } from "@/components/ui/button"
 import { authClient, fetchProtectedProfile, ProtectedProfileError, signInEmail, signUpEmail } from "@/lib/auth"
 import { postLoginPath } from "@/lib/auth-navigation"
@@ -51,6 +53,10 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
   const signup = mode === "sign-up"
   const router = useRouter()
   const session = authClient.useSession()
+  const [photos, setPhotos] = useState<string[]>([])
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoUnresolved, setPhotoUnresolved] = useState(false)
+  const photoIncomplete = signup && (photoUploading || photoUnresolved)
   const [pending, setPending] = useState<"email" | Provider | null>(null)
   const [issues, setIssues] = useState<Record<string, string>>({})
   const [error, setError] = useState("")
@@ -83,7 +89,7 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending || success || authenticated) return
+    if (pending || success || authenticated || photoIncomplete) return
     setIssues({})
     setError("")
     setShowCallbackError(false)
@@ -107,7 +113,7 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
     try {
       const { email, password } = input.result.data
       const result = input.mode === "sign-up"
-        ? await signUpEmail({ name: input.result.data.name, email, password, role: input.result.data.role })
+        ? await signUpEmail({ name: input.result.data.name, email, password, role: input.result.data.role, ...(photos[0] && { image: photos[0] }) })
         : await signInEmail(email, password)
       if (result.error) {
         setError(errorMessage(result.error, signup))
@@ -212,13 +218,21 @@ export function AuthForm({ mode, oauthReturn, oauthError, destination }: { mode:
               </div>
               {issues.role && <p id="role-error" className="account-field-error">{issues.role}</p>}
             </div>}
+            {signup && <div className="account-field account-field-wide">
+              <p>Profile photo (optional)</p>
+              <ImageUploader value={photos} onChange={setPhotos} multiple={false} replaceOnUpload
+                uploadFile={uploadSignupImage} onUploadingChange={setPhotoUploading} onUnresolvedChange={setPhotoUnresolved} />
+              {photoIncomplete && <p className="account-note" role="status">
+                Finish uploading, retry, or remove the selected photo before creating your account.
+              </p>}
+            </div>}
           </div>
           <label className="account-password-toggle"><input type="checkbox" checked={showPasswords} onChange={(event)=>setShowPasswords(event.target.checked)} /> Show passwords</label>
           {!signup && <>
             <a href="#password-help" className="wp-text-link account-forgot" aria-expanded={passwordHelp} onClick={() => setPasswordHelp(true)}>Forgot password?</a>
             <p className="account-feedback" id="password-help" tabIndex={-1} hidden={!passwordHelp}>Password reset is currently unavailable. If you signed up with Google or GitHub, use that provider to sign in.</p>
           </>}
-          <Button className="account-submit" type="submit" disabled={disabled}>
+          <Button className="account-submit" type="submit" disabled={disabled || photoIncomplete}>
             {pending === "email" ? (signup ? "Creating account…" : "Signing in…") : signup ? "Create account" : "Sign in"}
           </Button>
         </fieldset>

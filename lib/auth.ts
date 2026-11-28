@@ -18,6 +18,7 @@ export function signUpEmail(input: {
   password: string
   role?: "customer" | "vendor"
   businessName?: string
+  image?: string
 }) {
   return authClient.signUp.email(input)
 }

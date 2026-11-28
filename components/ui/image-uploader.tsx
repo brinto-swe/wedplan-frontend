@@ -14,6 +14,8 @@ type ImageUploaderProps = {
   disabled?: boolean
   multiple?: boolean
   onUploadingChange?: (uploading: boolean) => void
+  onUnresolvedChange?: (unresolved: boolean) => void
+  uploadFile?: typeof uploadImage
   reorderable?: boolean
   replaceOnUpload?: boolean
 }
@@ -34,7 +36,7 @@ function Preview({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} className="aspect-square w-full rounded-md bg-muted object-cover" />
 }
 
-export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true, onUploadingChange, reorderable = false, replaceOnUpload = false }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, maxImages = 10, disabled = false, multiple = true, onUploadingChange, onUnresolvedChange, uploadFile = uploadImage, reorderable = false, replaceOnUpload = false }: ImageUploaderProps) {
   const hintId = useId()
   const input = useRef<HTMLInputElement>(null)
   const active = useRef<AbortController | null>(null)
@@ -50,6 +52,8 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
   const chooseLabel = replacing && value.length ? "Replace image" : limit === 1 ? "Choose image" : "Choose images"
   const canSelect = !disabled && !busy && remaining > 0
 
+  const unresolved = selections.length > 0
+  useEffect(() => { onUnresolvedChange?.(unresolved) }, [unresolved, onUnresolvedChange])
   useEffect(() => { latest.current = { value, onChange } }, [value, onChange])
   useEffect(() => {
     const urls = previews.current
@@ -91,7 +95,7 @@ export function ImageUploader({ value, onChange, maxImages = 10, disabled = fals
         setSelections((rows) => rows.map((row) => row.id === item.id ? { ...row, status: "uploading", error: undefined } : row))
         let url: string
         try {
-          url = await uploadImage(item.file, controller.signal)
+          url = await uploadFile(item.file, controller.signal)
         } catch (error) {
           if (controller.signal.aborted) return
           const message = error instanceof TypeError ? "Could not reach the upload service. Try again."
